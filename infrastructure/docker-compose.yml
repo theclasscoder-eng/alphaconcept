@@ -1,0 +1,80 @@
+# Local development / self-hosting stack: Postgres, the signaling service, and
+# a coturn TURN/STUN server. Copy ../.env.example to ../.env and fill in real
+# secrets before running:
+#
+#   docker compose -f infrastructure/docker-compose.yml up -d
+#
+# NOTE: TURN needs a routable external IP for real NAT traversal. On a laptop the
+# TURN container works for same-host/LAN testing; for internet use, deploy it on
+# a host with a public IP and set TURN_HOST accordingly (see docs/deployment.md).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rdp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rdp}
+      POSTGRES_DB: rdp
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U rdp']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  signaling:
+    build:
+      context: ..
+      dockerfile: services/signaling/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SIGNALING_PORT: 8080
+      SIGNALING_PUBLIC_URL: ${SIGNALING_PUBLIC_URL:-ws://localhost:8080}
+      SIGNALING_STORE: ${SIGNALING_STORE:-prisma}
+      SIGNALING_ALLOWED_ORIGINS: ${SIGNALING_ALLOWED_ORIGINS:-*}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://rdp:rdp@postgres:5432/rdp?schema=public}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      DEVICE_CHALLENGE_SECRET: ${DEVICE_CHALLENGE_SECRET:?set DEVICE_CHALLENGE_SECRET in .env}
+      STUN_URL: ${STUN_URL:-stun:coturn:3478}
+      TURN_URL: ${TURN_URL:-turn:coturn:3478}
+      TURN_SHARED_SECRET: ${TURN_SHARED_SECRET:?set TURN_SHARED_SECRET in .env}
+      TURN_CREDENTIAL_TTL: ${TURN_CREDENTIAL_TTL:-3600}
+    ports:
+      - '8080:8080'
+    healthcheck:
+      test: ['CMD-SHELL', 'node -e "fetch(\"http://127.0.0.1:8080/healthz\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  coturn:
+    image: coturn/coturn:4.6
+    restart: unless-stopped
+    network_mode: host # TURN needs direct access to relay UDP ports.
+    command:
+      - -n
+      - --log-file=stdout
+      - --min-port=49160
+      - --max-port=49200
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SHARED_SECRET:?set TURN_SHARED_SECRET in .env}
+      - --realm=${TURN_REALM:-remotedesktop.local}
+      - --no-tls
+      - --no-dtls
+      # For production, add: --external-ip=<PUBLIC_IP> and enable TLS/DTLS.
+    # When not using host networking, expose these instead:
+    #   - "3478:3478/tcp"
+    #   - "3478:3478/udp"
+    #   - "49160-49200:49160-49200/udp"
+
+volumes:
+  pgdata:

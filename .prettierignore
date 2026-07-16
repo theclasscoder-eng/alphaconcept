@@ -1,0 +1,8 @@
+node_modules
+dist
+dist-electron
+out
+release
+coverage
+pnpm-lock.yaml
+**/prisma/migrations

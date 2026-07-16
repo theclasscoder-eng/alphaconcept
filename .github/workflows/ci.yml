@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build workspace packages
+        run: pnpm --filter @rdp/protocol --filter @rdp/shared --filter @rdp/config build
+
+      - name: Generate Prisma client
+        run: pnpm --filter @rdp/signaling db:generate
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build signaling
+        run: pnpm --filter @rdp/signaling build
+
+      - name: Build desktop (bundles)
+        run: pnpm --filter @rdp/desktop build
+
+      - name: Validate Prisma schema
+        run: pnpm --filter @rdp/signaling exec prisma validate
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+
+  windows-installer:
+    runs-on: windows-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm --filter @rdp/protocol --filter @rdp/shared --filter @rdp/config build
+      - name: Package Windows installer
+        run: pnpm --filter @rdp/desktop package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: apps/desktop/release/*.exe
+          if-no-files-found: warn

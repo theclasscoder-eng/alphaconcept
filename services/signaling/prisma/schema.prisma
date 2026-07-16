@@ -1,0 +1,86 @@
+// Prisma schema for the signaling service.
+//
+// Stores ONLY session-establishment metadata: device public identities,
+// short-lived pairing/session requests, trusted-device relationships, and
+// unattended-access grants. It never stores screen content, keystrokes,
+// clipboard data, or session encryption material.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// A registered device, identified by the fingerprint-derived id of its
+/// Ed25519 public key. Private keys never reach the server.
+model Device {
+  id         String   @id
+  publicKey  String   @unique
+  name       String
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  @@map("devices")
+}
+
+/// A short-lived pairing request. Expires quickly and cannot be reused.
+model Pairing {
+  id              String   @id
+  code            String
+  creatorDeviceId String
+  joinerDeviceId  String?
+  status          String   @default("pending")
+  unattended      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  expiresAt       DateTime
+
+  @@index([code])
+  @@index([expiresAt])
+  @@map("pairings")
+}
+
+/// A mutual trust relationship established by an approved pairing. Stored once
+/// with a canonical ordering (deviceA < deviceB, enforced by the app layer).
+model Trust {
+  id        String   @id @default(uuid())
+  deviceA   String
+  deviceB   String
+  createdAt DateTime @default(now())
+
+  @@unique([deviceA, deviceB])
+  @@index([deviceA])
+  @@index([deviceB])
+  @@map("trusts")
+}
+
+/// A directed unattended-access grant: `host` allows `controller` to connect
+/// without an interactive approval. Disabled by default; created only on
+/// explicit user action; removed on revocation.
+model UnattendedGrant {
+  id                 String   @id @default(uuid())
+  hostDeviceId       String
+  controllerDeviceId String
+  createdAt          DateTime @default(now())
+
+  @@unique([hostDeviceId, controllerDeviceId])
+  @@index([hostDeviceId])
+  @@map("unattended_grants")
+}
+
+/// Short-lived metadata for a session request. Swept after it ends/expires.
+model Session {
+  id                 String   @id
+  hostDeviceId       String
+  controllerDeviceId String
+  status             String   @default("requested")
+  unattended         Boolean  @default(false)
+  endedBy            String?
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
+
+  @@index([expiresAt])
+  @@map("sessions")
+}

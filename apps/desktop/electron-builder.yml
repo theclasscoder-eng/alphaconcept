@@ -1,0 +1,42 @@
+appId: com.remotedesktop.app
+productName: Remote Desktop
+copyright: Copyright © 2026
+
+directories:
+  output: release
+  buildResources: assets
+
+# asar is disabled because pnpm symlinks workspace packages outside the app dir,
+# which the asar packer rejects. The workspace packages are bundled into the
+# main/preload output anyway; only native modules (nut-js) are copied from
+# node_modules.
+asar: false
+
+files:
+  - out/**/*
+  - package.json
+  - '!**/*.map'
+  - '!node_modules/@rdp/**'
+
+# Native modules (nut-js / libnut) ship .node binaries that must live outside the
+# asar archive so they can be loaded at runtime.
+asarUnpack:
+  - '**/*.node'
+  - '**/@nut-tree-fork/**'
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+# macOS/Linux targets are intentionally omitted for the Windows-first release.

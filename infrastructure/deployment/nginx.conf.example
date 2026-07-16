@@ -1,0 +1,51 @@
+# Example nginx reverse proxy terminating TLS and upgrading the signaling
+# WebSocket (WSS -> ws). Obtain certificates with certbot/Let's Encrypt.
+#
+#   server_name  -> your domain (e.g. signal.example.com)
+#   proxy_pass   -> the signaling container/host (e.g. 127.0.0.1:8080)
+
+map $http_upgrade $connection_upgrade {
+  default upgrade;
+  ''      close;
+}
+
+server {
+  listen 80;
+  server_name signal.example.com;
+  # Redirect all HTTP to HTTPS.
+  location / {
+    return 301 https://$host$request_uri;
+  }
+}
+
+server {
+  listen 443 ssl http2;
+  server_name signal.example.com;
+
+  ssl_certificate     /etc/letsencrypt/live/signal.example.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/signal.example.com/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+
+  # Health check (plain HTTPS).
+  location /healthz {
+    proxy_pass http://127.0.0.1:8080/healthz;
+  }
+
+  # ICE credential endpoint (bearer token).
+  location /ice {
+    proxy_pass http://127.0.0.1:8080/ice;
+    proxy_set_header Authorization $http_authorization;
+  }
+
+  # WebSocket signaling.
+  location /ws {
+    proxy_pass http://127.0.0.1:8080/ws;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 3600s; # keep long-lived sockets open
+  }
+}

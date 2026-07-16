@@ -1,0 +1,12 @@
+packages:
+  - "apps/*"
+  - "services/*"
+  - "packages/*"
+allowBuilds:
+  esbuild: true
+  electron: true
+  "@nut-tree-fork/libnut": true
+  keytar: true
+  "@prisma/client": true
+  prisma: true
+  "@prisma/engines": true
