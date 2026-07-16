@@ -24,7 +24,7 @@ import { registerIpc } from './ipc.js';
 if (process.env.RDP_USER_DATA) {
   app.setPath('userData', process.env.RDP_USER_DATA);
 }
-app.setAppUserModelId('com.alphaconcept.app');
+app.setAppUserModelId('com.alphaconcept.desktop');
 
 let mainWindow: BrowserWindow | null = null;
 let tray: AppTray | null = null;

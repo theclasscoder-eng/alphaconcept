@@ -18,7 +18,8 @@
     "test": "pnpm -r test",
     "db:migrate": "pnpm --filter @rdp/signaling db:migrate",
     "db:generate": "pnpm --filter @rdp/signaling db:generate",
-    "dev": "pnpm --parallel --filter @rdp/signaling --filter @rdp/desktop dev"
+    "dev": "pnpm --parallel --filter @rdp/signaling --filter @rdp/desktop dev",
+    "dist:win": "pnpm --filter @rdp/desktop package"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
@@ -33,28 +34,4 @@
     "typescript-eslint": "^8.20.0",
     "vitest": "^3.0.2"
   }
-  {
-  "scripts": {
-    "dist:win": "electron-builder --win nsis"
-  },
-  "build": {
-    "appId": "com.alphaconcept.desktop",
-    "productName": "AlphaConcept",
-    "directories": {
-      "output": "release-new"
-    },
-    "win": {
-      "target": [
-        "nsis"
-      ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
-    },
-    "artifactName": "AlphaConcept-Setup-${version}.${ext}"
-  }
-}
 }

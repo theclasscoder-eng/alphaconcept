@@ -1,9 +1,9 @@
-appId: com.alphaconcept.app
+appId: com.alphaconcept.desktop
 productName: AlphaConcept
 copyright: Copyright © 2026
 
 directories:
-  output: release
+  output: release-new
   buildResources: assets
 
 # asar is disabled because pnpm symlinks workspace packages outside the app dir,
