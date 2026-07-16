@@ -31,6 +31,162 @@ _Last verified: 2026-07-15 on Windows 11 (Node 24.13.0, pnpm 11.5.3)._
 - nut-js native backend loads on this machine (`Key.A = 72`, `mouse.setPosition` present).
 - `electron-builder --dir` — **produced `apps/desktop/release/win-unpacked/Remote Desktop.exe`** (188 MB) containing all bundles and the native `@nut-tree-fork/libnut-win32/.../libnut.node`.
 
+## Real two-machine run (user-executed, 2026-07-16, LAN via iPhone hotspot)
+
+First live host↔controller test on two physical Windows PCs.
+
+**Worked:** signaling connect on both, pairing + fingerprint approval, session
+request/approve, ICE/DTLS connect, data channel, **remote mouse/keyboard input**.
+
+**Failed → FIXED in 0.1.1:**
+
+1. **Controller saw only a black screen.** Root cause: a race in `HostSession`.
+   The controller sends its offer immediately on approval, but the host's
+   `getUserMedia` screen capture takes ~100–500 ms. `onOffer` answered before
+   `addTrack()` ran, so the answer negotiated **no video track** — connection
+   succeeded (input worked) but no media ever flowed. Fixed by gating `onOffer`
+   on a `captureReady` promise resolved after tracks are attached.
+   Regression-tested in `src/renderer/session/host.test.ts` (verified the tests
+   fail with the fix removed: `expected 4 to be less than 0`).
+2. **Mouse confined to a small box.** Downstream of (1): with no stream, the
+   `<video>` element falls back to its default 300×150 intrinsic size, and the
+   viewer mapped pointer coords against the element rect. Now the viewer uses
+   the tested `computeContentRect`/`viewerPixelToNormalized` helpers against the
+   real letterboxed frame area (`object-fit: contain`), and sends no input at all
+   until a frame exists.
+3. Added a "Waiting for the host's screen…" state (black is never silent now) and
+   host capture failure ends the session with an error instead of hanging.
+
+**Still to confirm on hardware:** that video actually renders after 0.1.1.
+
+### 0.1.2 — main-process crash: "TypeError: Object has been destroyed"
+
+Reported from a real launch (`App.emit` in the stack = an `app.on(...)` handler).
+
+Root cause: closing the main window does not quit the app (it stays in the tray
+so the host can accept sessions), but `mainWindow` was **never cleared**, so it
+kept referencing a destroyed `BrowserWindow`. Six unguarded call sites; the crash
+path was `app.on('second-instance')` → `mainWindow.isMinimized()` after the window
+had been closed and the app relaunched.
+
+Fixed: `liveMainWindow()` / `ensureMainWindow()` / `focusMainWindow()` helpers,
+`win.on('closed')` clears the reference, a liveness-checked `send()` in ipc.ts,
+destroyed-guards in `AppTray` (incl. idempotent `destroy()`), a `closed` handler
+for the indicator window, and the single-instance loser no longer bootstraps.
+Behaviour also improved: relaunching / clicking the tray now **recreates** the
+window instead of doing nothing.
+
+Verified on hardware: launched the packaged app, closed the window (app stayed in
+the tray, 3 processes), relaunched → **no crash, window recreated** (same PID).
+
+### 0.1.3 — cursor misaligned on high-DPI hosts + release-control shortcut
+
+**Bug (user-reported):** controller pointer at the far edge put the host cursor at
+the screen centre — a 2x factor on a 200%-scaled host.
+
+Root cause: **DIP vs physical pixels.** Electron's `screen` API reports display
+bounds in DIP (a 2560x1600 display at 200% reports 1280x800, scaleFactor 2), but
+nut-js runs inside the DPI-*aware* Electron process and drives the cursor in
+physical pixels. Feeding it DIP made the cursor reach only 1/scaleFactor of the
+screen.
+
+Measured inside Electron on the dev box (this is the decisive evidence):
+
+| source | value |
+| --- | --- |
+| `screen` bounds / scaleFactor | 1280x800, 2 |
+| `screen.dipToScreenPoint(1280,800)` | 2560x1600 |
+| nut-js screen size **in Electron** | **2560x1600** (physical) |
+| nut-js screen size **in plain Node** | 1280x800 (DPI-virtualized — misleading!) |
+
+Note the last row: probing nut-js from Node gives the *opposite* answer, because
+DPI virtualization is per-process. Always probe inside Electron.
+
+Fixed by injecting `screen.dipToScreenPoint` into `InputController`
+(`dipToScreenPoint` option), which also handles multi-monitor mixed-DPI correctly
+— a naive `* scaleFactor` does not. The controller stays Electron-free/testable.
+Regression-tested (verified failing with the fix removed:
+`expected [ 'moveTo', 1280, 800 ] to deeply equal [ 'moveTo', 2560, 1600 ]`).
+
+**Feature:** `Ctrl+Alt+Shift+R` on the controller releases/resumes input without
+ending the session (screen stays live). Also a "Control: on/off" toolbar button
+(always visible, even when the toolbar is collapsed). Releasing control — and
+window blur (Alt+Tab) — now sends key-up for every held key, preventing stuck
+modifiers on the host.
+
+### 0.1.4 — hideable on-screen banner + discoverable host end-shortcut
+
+**Feature (user-requested):** the large red overlay defeated the purpose when the
+host is demoing/sharing. Added Settings → "Hide the on-screen banner" behind a
+warning modal. When hidden, the **tray icon turns red** during a session with a
+"Remote session active" tooltip, so it stays visible in the taskbar hidden-icons
+area (the persistent indicator). Session history still records everything.
+Enabling mid-session hides the banner immediately (tray stays); disabling applies
+next session.
+
+**Feature (user-requested):** surfaced the host instant-end shortcut. It already
+existed (`Ctrl+Alt+F12`, global) but was undiscoverable and could fail silently.
+Now registered robustly with fallbacks (`Ctrl+Alt+Q`, `Ctrl+Shift+F12`), the
+active combo is shown in Settings, the tray menu, and the overlay, and it's the
+"emergency stop": `input.revoke()` cuts injection instantly (control regained
+immediately) and the session tears down. Verified at runtime that the primary
+accelerator registers (no fallback warning) and the app launches without crash.
+
+### 0.1.5 — remote mouse blocked over elevated (admin) windows
+
+**Bug (user-reported):** remote mouse froze over "certain programs" — the local
+mouse worked, the remote one didn't, only over those windows.
+
+Root cause: **Windows UIPI.** A medium-integrity (normal) process cannot SendInput
+to a higher-integrity (elevated/admin) window; Windows drops it silently, so
+nut-js "succeeds" but nothing happens. Affects Task Manager, installers, and any
+app launched "as administrator". Confirmed the dev host runs non-elevated
+(`WindowsPrincipal.IsInRole(Administrator)` → False).
+
+Fix: `system.ts` detects elevation (authoritative token check via PowerShell,
+`net session` fallback) and `relaunchElevated()` re-launches via
+`Start-Process -Verb RunAs` (UAC prompt; passes `--allow-multi` so the elevated
+instance skips the single-instance lock during handover; old instance exits on
+success, stays put on cancel). Host Dashboard shows an elevation card:
+green "Running as administrator / Full control" when elevated, else an amber
+warning with "Restart as administrator" and a "Don't show again" flag
+(`hideAdminWarning` setting, re-enableable in Settings). Documented that UAC
+consent and the lock/login secure desktops remain uncontrollable by design.
+Verified: built app launches clean, elevation IPC + check + card all shipped.
+
+### 0.1.6 — keyboard/mouse dead on admin apps + rename to AlphaConcept
+
+**Keyboard bug (user-reported):** after elevating fixed the mouse, keyboard/mouse
+still didn't work on admin programs. **Proved keyboard injection works** end-to-end
+(nut-js typed `hi99` into Notepad, then Ctrl+A/Ctrl+C, read back from clipboard →
+`KEYBOARD WORKS`). So the code is fine; the admin-window block is purely UIPI
+elevation. Key insight: the cursor *moving* over an admin window never proves
+elevation (movement isn't blocked) — only clicks/keys are — so the earlier "mouse
+worked" likely wasn't truly elevated. Two robust fixes shipped:
+1. `Start AlphaConcept (Admin).cmd` — launches the app elevated (one UAC prompt);
+   works with any existing copy (in-place-update path).
+2. `win.requestedExecutionLevel: requireAdministrator` — the packaged exe now
+   always runs elevated. Verified the built `AlphaConcept.exe` manifest contains
+   `requireAdministrator`.
+
+**Rename:** product renamed **Remote Desktop → AlphaConcept** across app identity
+(appId `com.alphaconcept.app`, AppUserModelID, window title, tray, brand),
+electron-builder (`productName`, exe `AlphaConcept.exe`), launcher/updater scripts
+(updater finds both old and new exe names), README/docs. Internal package scope
+`@rdp/*` intentionally kept (not user-facing; renaming it is a churny no-value
+refactor). Full rebuild succeeded → `AlphaConcept.exe`; note the exe rename means
+the OTHER PC needs a full folder copy (not the JS-only in-place update) to get the
+new name + requireAdministrator manifest — or it can keep the old exe + the admin
+launcher.
+
+## In-place update mechanism
+
+Because `asar: false`, app code is plain files at `<app>\resources\app\out`. A
+build produces a ~600 KB (140 KB zipped) update package via
+`scripts\make-update.cmd`; `scripts\apply-update.ps1` swaps it in, backing up the
+old build to `out.bak`. Verified against `release\win-unpacked` (0.1.0 → 0.1.1,
+new code present, rollback backup created). No reinstall required.
+
 ## Confirmed limitations
 
 - **NSIS installer (`.exe`) not produced in this sandbox.** electron-builder extracts its `winCodeSign` cache, which contains macOS symlinks; creating them needs the Windows *SeCreateSymbolicLinkPrivilege* (Administrator or Developer Mode), unavailable to this non-elevated shell. The unpacked app builds fine. Run `pnpm --filter @rdp/desktop package` from an **elevated** terminal or with **Developer Mode** enabled, or let the CI `windows-installer` job (runs on `windows-latest`, which has the privilege) produce it.

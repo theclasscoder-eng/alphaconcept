@@ -9,7 +9,6 @@
 import {
   parseControlMessage,
   normalizedToLogicalPoint,
-  normalizedToPhysicalPoint,
   TokenBucket,
   DEFAULT_MOUSE_MOVE_RATE,
   type ControlMessage,
@@ -17,12 +16,25 @@ import {
 import type { InputInjector } from '../platform/types.js';
 import type { ActiveDisplay } from '../shared-app/types.js';
 
+export type Point = { x: number; y: number };
+
 export type HandleResult = 'injected' | 'accepted' | 'rejected' | 'throttled' | 'not-authorized';
 
 export interface InputControllerOptions {
   injector: InputInjector;
-  /** Set true to map to physical pixels (injector operating in device px). */
-  usePhysicalPixels?: boolean;
+  /**
+   * Convert a logical/DIP point to the PHYSICAL screen point the OS input API
+   * expects.
+   *
+   * This matters: Electron's `screen` API reports display bounds in DIP (a
+   * 2560x1600 display at 200% scaling reports 1280x800), but nut-js runs inside
+   * the DPI-aware Electron process and drives the cursor in physical pixels
+   * (2560x1600). Feeding it DIP coordinates makes the cursor reach only half the
+   * screen. Pass Electron's `screen.dipToScreenPoint` here — it also handles
+   * multi-monitor mixed-DPI layouts correctly, which a naive `* scaleFactor`
+   * does not. Defaults to identity (useful for tests / 100%-scale setups).
+   */
+  dipToScreenPoint?: (p: Point) => Point;
   now?: () => number;
   /** Callback invoked with clipboard text when a clipboard message arrives. */
   onClipboard?: (text: string) => void;
@@ -61,11 +73,10 @@ export class InputController {
     this.display = null;
   }
 
-  private point(p: { nx: number; ny: number }): { x: number; y: number } {
-    const display = this.display!;
-    return this.opts.usePhysicalPixels
-      ? normalizedToPhysicalPoint(p, display)
-      : normalizedToLogicalPoint(p, display);
+  /** normalized [0,1] -> display DIP point -> physical screen point. */
+  private point(p: { nx: number; ny: number }): Point {
+    const dip = normalizedToLogicalPoint(p, this.display!);
+    return this.opts.dipToScreenPoint ? this.opts.dipToScreenPoint(dip) : dip;
   }
 
   /** Validate and, if authorized, inject a raw control message. */

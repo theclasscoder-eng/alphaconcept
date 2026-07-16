@@ -24,10 +24,13 @@ export function Settings(): JSX.Element {
   const [turnUrl, setTurnUrl] = useState('');
   const [autostart, setAutostart] = useState(false);
   const [stealth, setStealth] = useState(false);
+  const [hideOverlayWarn, setHideOverlayWarn] = useState(false);
+  const [shortcut, setShortcut] = useState('Ctrl+Alt+F12');
 
   useEffect(() => {
     void loadHistory();
     void refreshMonitors();
+    void rd.session.emergencyShortcut().then(setShortcut);
   }, [loadHistory, refreshMonitors]);
   useEffect(() => {
     if (settings) {
@@ -107,6 +110,57 @@ export function Settings(): JSX.Element {
               onChange={(e) => updateSettings({ clipboardSync: e.target.checked })}
             />
             Enable text-only clipboard synchronization
+          </label>
+
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={settings.hideOverlay}
+              onChange={(e) => {
+                if (e.target.checked) setHideOverlayWarn(true); // confirm first
+                else updateSettings({ hideOverlay: false });
+              }}
+            />
+            Hide the on-screen “Remote session active” banner
+          </label>
+          <div className="muted" style={{ fontSize: 12, marginLeft: 26 }}>
+            The tray icon still turns <span style={{ color: 'var(--red)' }}>red</span> during a
+            session and stays visible in the taskbar’s hidden-icons area.
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="row">
+          <div>
+            <strong>Emergency stop (host)</strong>
+            <div className="muted">
+              While someone controls this computer, press this anywhere to instantly cut input and
+              end the session — you regain control immediately. Also on the tray menu.
+            </div>
+          </div>
+          <span className="badge green" style={{ fontSize: 14, padding: '6px 12px' }}>
+            {shortcut}
+          </span>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="row">
+          <div>
+            <strong>Controlling admin apps</strong>
+            <div className="muted">
+              Windows blocks remote input to programs run “as administrator” unless this app is
+              elevated. Turn the reminder back on if you dismissed it.
+            </div>
+          </div>
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={!settings.hideAdminWarning}
+              onChange={(e) => updateSettings({ hideAdminWarning: !e.target.checked })}
+            />
+            Show reminder
           </label>
         </div>
       </div>
@@ -241,6 +295,52 @@ export function Settings(): JSX.Element {
           </button>
         </div>
       </div>
+
+      {hideOverlayWarn && (
+        <div className="modal-backdrop" onClick={() => setHideOverlayWarn(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="stack">
+              <h2 className="h1" style={{ color: 'var(--amber)' }}>⚠ Hide the on-screen banner?</h2>
+              <p className="muted" style={{ margin: 0 }}>
+                The large “Remote session active” banner exists so anyone at this computer can see
+                when it’s being controlled. Hiding it reduces that visibility.
+              </p>
+              <div className="card" style={{ margin: 0 }}>
+                <p style={{ margin: 0 }}>What stays in place:</p>
+                <ul className="muted" style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+                  <li>
+                    The tray icon turns <span style={{ color: 'var(--red)' }}>red</span> and its
+                    tooltip reads “Remote session active” — visible in the taskbar’s hidden-icons
+                    (▲) area.
+                  </li>
+                  <li>Every session is still recorded in local history.</li>
+                  <li>
+                    You can end any session instantly with <b>{shortcut}</b>.
+                  </li>
+                </ul>
+              </div>
+              <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+                Only enable this on a computer you own and control. It is not a way to monitor
+                someone without their knowledge.
+              </p>
+              <div className="row">
+                <button className="ghost" onClick={() => setHideOverlayWarn(false)}>
+                  Cancel
+                </button>
+                <button
+                  className="primary"
+                  onClick={() => {
+                    updateSettings({ hideOverlay: true });
+                    setHideOverlayWarn(false);
+                  }}
+                >
+                  Hide banner (keep tray indicator)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

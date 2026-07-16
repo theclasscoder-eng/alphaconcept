@@ -270,19 +270,89 @@ a {
   align-items: center;
   justify-content: center;
 }
+/* Fit-to-window: the element fills the stage and letterboxes internally.
+   Coordinate mapping accounts for this via computeContentRect(). */
 .viewer-stage video {
-  max-width: 100%;
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   outline: none;
+  display: block;
 }
 .viewer-stage.one-to-one {
   overflow: auto;
   align-items: flex-start;
   justify-content: flex-start;
 }
+/* 1:1 — natural pixel size, scrollable. Element box == frame box. */
 .viewer-stage.one-to-one video {
+  width: auto;
+  height: auto;
   max-width: none;
   max-height: none;
+  object-fit: none;
+  flex: none;
+}
+
+/* Control released: make it obvious the session is live but input is detached. */
+.viewer-stage.no-control {
+  cursor: default;
+}
+.viewer-stage.no-control video {
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+.control-released {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(20, 24, 30, 0.95);
+  border: 1px solid var(--amber);
+  border-radius: 10px;
+  padding: 16px 22px;
+  text-align: center;
+  pointer-events: none;
+  max-width: 460px;
+}
+.control-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 24, 30, 0.7);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 11px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.viewer-waiting {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text);
+  pointer-events: none;
+}
+.spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .spacer {
   flex: 1;

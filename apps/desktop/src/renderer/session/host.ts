@@ -54,6 +54,18 @@ export class HostSession {
   private statsTimer: number | null = null;
   private closed = false;
 
+  /**
+   * Resolves once screen capture has started AND the video track has been added
+   * to the peer connection. `onOffer` waits on this before answering.
+   *
+   * Without this gate the controller's offer (sent the moment the session is
+   * approved) can be answered before `getUserMedia` returns, producing an answer
+   * with no video track — the connection succeeds but the controller only ever
+   * sees black. Resolves `false` if capture failed.
+   */
+  private readonly captureReady: Promise<boolean>;
+  private markCaptureReady!: (ok: boolean) => void;
+
   constructor(
     readonly sessionId: string,
     iceServers: IceServer[],
@@ -63,6 +75,9 @@ export class HostSession {
     private quality: QualityLevel,
     private frameRate: FrameRate,
   ) {
+    this.captureReady = new Promise<boolean>((resolve) => {
+      this.markCaptureReady = resolve;
+    });
     this.pc = new RTCPeerConnection({ iceServers: iceServers as RTCIceServer[] });
     this.pc.onicecandidate = (e) => {
       if (e.candidate) {
@@ -95,6 +110,8 @@ export class HostSession {
     try {
       this.stream = await captureMonitor(this.monitor, this.quality, this.frameRate);
     } catch (err) {
+      // Unblock any waiting offer so the controller is not left hanging.
+      this.markCaptureReady(false);
       this.cb.onCaptureError(String(err));
       throw err;
     }
@@ -102,6 +119,8 @@ export class HostSession {
       this.pc.addTrack(track, this.stream);
     }
     this.applyEncoding();
+    // Tracks are attached — it is now safe to answer the offer.
+    this.markCaptureReady(true);
     this.statsTimer = window.setInterval(async () => {
       if (this.closed) return;
       this.cb.onQuality(await this.monitorStats.sample(this.pc));
@@ -109,6 +128,10 @@ export class HostSession {
   }
 
   async onOffer(sdp: string): Promise<void> {
+    // Wait for the video track to exist before answering, otherwise the answer
+    // would negotiate no video and the controller would see a black screen.
+    const captured = await this.captureReady;
+    if (!captured || this.closed) return;
     await this.pc.setRemoteDescription({ type: 'offer', sdp });
     const answer = await this.pc.createAnswer();
     await this.pc.setLocalDescription(answer);
@@ -162,6 +185,8 @@ export class HostSession {
   stop(): void {
     if (this.closed) return;
     this.closed = true;
+    // Release anything awaiting capture so it cannot answer after teardown.
+    this.markCaptureReady(false);
     if (this.statsTimer) window.clearInterval(this.statsTimer);
     this.stream?.getTracks().forEach((t) => t.stop());
     try {

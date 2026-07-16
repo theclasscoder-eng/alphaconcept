@@ -56,6 +56,14 @@ export interface AppSettings {
   clipboardSync: boolean;
   quality: QualityLevel;
   frameRate: FrameRate;
+  /**
+   * Hide the large on-screen "Remote session active" overlay while hosting. The
+   * tray icon (which turns red during a session) remains as the persistent
+   * indicator. Opt-in, behind a warning.
+   */
+  hideOverlay: boolean;
+  /** Suppress the "run as administrator" prompt for controlling elevated apps. */
+  hideAdminWarning: boolean;
   /** Host-local allow-list of controller device ids permitted unattended access. */
   unattendedDeviceIds: string[];
 }
@@ -120,6 +128,8 @@ export interface RemoteDesktopApi {
     showIndicator(info: IndicatorInfo): Promise<void>;
     hideIndicator(): Promise<void>;
     recordAudit(entry: AuditEntry): Promise<void>;
+    /** The registered host emergency-stop accelerator, e.g. "Ctrl+Alt+F12". */
+    emergencyShortcut(): Promise<string>;
     onEmergencyStop(cb: () => void): () => void;
     onMonitorSelect(cb: (index: number) => void): () => void;
   };
@@ -137,5 +147,11 @@ export interface RemoteDesktopApi {
   };
   updates: {
     check(): Promise<{ current: string }>;
+  };
+  system: {
+    /** True if the host app runs elevated (can control admin windows). */
+    isElevated(): Promise<boolean>;
+    /** Relaunch the app as administrator (UAC prompt). */
+    relaunchElevated(): Promise<'relaunching' | 'already-elevated' | 'cancelled' | 'unsupported'>;
   };
 }

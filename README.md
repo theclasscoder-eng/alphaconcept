@@ -1,4 +1,4 @@
-# Remote Desktop (Windows-first)
+# AlphaConcept (Windows-first)
 
 A secure, self-hostable remote desktop application. One app runs as either a
 **host** (its screen is shared and controlled) or a **controller** (views and

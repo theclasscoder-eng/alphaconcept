@@ -143,6 +143,8 @@ export class Store {
       clipboardSync: false,
       quality: 'balanced',
       frameRate: 30,
+      hideOverlay: false,
+      hideAdminWarning: false,
       unattendedDeviceIds: [],
     };
   }

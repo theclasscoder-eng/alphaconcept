@@ -8,7 +8,7 @@ cd /d "%~dp0"
 for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-NetIPAddress -AddressFamily IPv4 ^| Where-Object { $_.InterfaceAlias -notmatch 'Loopback' -and $_.IPAddress -notmatch '^169\.254\.' } ^| Select-Object -First 1).IPAddress"') do set LANIP=%%i
 
 echo ==========================================================
-echo   Remote Desktop - signaling server
+echo   AlphaConcept - signaling server
 echo.
 echo   This PC's IP :  %LANIP%
 echo   Use this URL on BOTH PCs (Settings - Signaling server URL):

@@ -70,6 +70,54 @@ describe('InputController', () => {
     expect(injector.calls[0]).toEqual(['moveTo', 500, 500]);
   });
 
+  // Regression: nut-js drives the cursor in PHYSICAL pixels inside the DPI-aware
+  // Electron process, but display bounds are DIP. Without converting, the cursor
+  // reached only 1/scaleFactor of the screen (at 200%: far edge -> screen centre).
+  describe('DPI scaling', () => {
+    // A 2560x1600 display at 200% reports 1280x800 DIP with scaleFactor 2.
+    const hidpi = { bounds: { x: 0, y: 0, width: 1280, height: 800 }, scaleFactor: 2 };
+    const dipToScreenPoint = (p: { x: number; y: number }) => ({ x: p.x * 2, y: p.y * 2 });
+
+    it('maps the far corner to the physical far corner, not the centre', async () => {
+      const c = new InputController({ injector, dipToScreenPoint });
+      c.authorize(hidpi);
+      await c.handle({ ...base, type: 'input.mouse.move', p: { nx: 1, ny: 1 } });
+      // Must be the real bottom-right (2560,1600) - NOT the DIP value (1280,800),
+      // which is the middle of the physical screen.
+      expect(injector.calls[0]).toEqual(['moveTo', 2560, 1600]);
+    });
+
+    it('maps the centre to the physical centre', async () => {
+      const c = new InputController({ injector, dipToScreenPoint });
+      c.authorize(hidpi);
+      await c.handle({ ...base, type: 'input.mouse.move', p: { nx: 0.5, ny: 0.5 } });
+      expect(injector.calls[0]).toEqual(['moveTo', 1280, 800]);
+    });
+
+    it('applies the converter to clicks and scrolls too', async () => {
+      const c = new InputController({ injector, dipToScreenPoint });
+      c.authorize(hidpi);
+      await c.handle({
+        ...base,
+        type: 'input.mouse.button',
+        button: 'left',
+        action: 'down',
+        p: { nx: 1, ny: 1 },
+      });
+      expect(injector.calls[0]).toEqual(['moveTo', 2560, 1600]);
+    });
+
+    it('offsets a secondary monitor correctly', async () => {
+      // Second display to the right of a 1280-DIP primary.
+      const second = { bounds: { x: 1280, y: 0, width: 1280, height: 800 }, scaleFactor: 2 };
+      const c = new InputController({ injector, dipToScreenPoint });
+      c.authorize(second);
+      await c.handle({ ...base, type: 'input.mouse.move', p: { nx: 0, ny: 0 } });
+      // DIP (1280,0) -> physical (2560,0): the origin of the second monitor.
+      expect(injector.calls[0]).toEqual(['moveTo', 2560, 0]);
+    });
+  });
+
   it('throttles a flood of mouse moves', async () => {
     ctl.authorize(display);
     let throttled = 0;

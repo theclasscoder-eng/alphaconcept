@@ -16,7 +16,7 @@ export function App(): JSX.Element {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="brand">🖥️ Remote Desktop</div>
+        <div className="brand">🖥️ AlphaConcept</div>
         <button
           className={`nav-item${page === 'dashboard' ? ' active' : ''}`}
           onClick={() => setPage('dashboard')}

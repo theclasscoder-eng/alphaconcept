@@ -31,7 +31,7 @@ export function createMainWindow(): BrowserWindow {
     show: false,
     backgroundColor: '#0e1116',
     autoHideMenuBar: true,
-    title: 'Remote Desktop',
+    title: 'AlphaConcept',
     webPreferences: {
       preload: PRELOAD,
       contextIsolation: true,
@@ -96,8 +96,13 @@ export function showIndicator(controllerName: string, unattended: boolean, steal
   else void win.loadFile(entry.file!, { hash: '/indicator' });
 
   win.once('ready-to-show', () => {
+    if (win.isDestroyed()) return;
     win.showInactive();
     win.webContents.send('indicator:update', { controllerName, unattended });
+  });
+  // Never keep a reference to a destroyed window.
+  win.on('closed', () => {
+    if (indicatorWindow === win) indicatorWindow = null;
   });
   indicatorWindow = win;
 }

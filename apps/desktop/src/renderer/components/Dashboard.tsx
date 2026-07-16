@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store.js';
 import { Pairing } from './Pairing.js';
+import { ElevationCard } from './ElevationCard.js';
 
 function statusLabel(status: string): string {
   switch (status) {
@@ -40,6 +41,8 @@ export function Dashboard(): JSX.Element {
     <div>
       <h1 className="h1">This computer</h1>
       <p className="sub">Host or control a paired computer over an encrypted connection.</p>
+
+      <ElevationCard />
 
       <div className="card">
         <div className="row">

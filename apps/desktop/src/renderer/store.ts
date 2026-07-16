@@ -236,7 +236,12 @@ export const useStore = create<State>((set, get) => {
               onControl: (raw) => void rd.session.injectControl(raw),
               onQuality: (q) => set((s) => ({ session: { ...s.session, quality: q } })),
               onClosed: () => teardownSession('ended', 'server'),
-              onCaptureError: (m) => set({ banner: `Capture error: ${m}` }),
+              onCaptureError: (m) => {
+                // Don't leave the controller staring at a black screen: surface
+                // the error here and end the session so it gets a clear signal.
+                set({ banner: `Capture error: ${m}` });
+                void get().endSession('host capture failed');
+              },
             },
             settings?.quality ?? 'balanced',
             settings?.frameRate ?? 30,

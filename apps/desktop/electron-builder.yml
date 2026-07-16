@@ -1,5 +1,5 @@
-appId: com.remotedesktop.app
-productName: Remote Desktop
+appId: com.alphaconcept.app
+productName: AlphaConcept
 copyright: Copyright © 2026
 
 directories:
@@ -30,6 +30,10 @@ win:
       arch:
         - x64
   artifactName: ${productName}-Setup-${version}.${ext}
+  # Always run elevated so remote input works in windows opened "as
+  # administrator" (Windows UIPI blocks input from a non-elevated process). This
+  # triggers a UAC prompt at launch. Intended for personal, self-hosted use.
+  requestedExecutionLevel: requireAdministrator
 
 nsis:
   oneClick: false

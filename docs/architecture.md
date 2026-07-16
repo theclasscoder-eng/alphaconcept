@@ -2,7 +2,7 @@
 
 ## Overview
 
-Remote Desktop is a Windows-first remote administration tool with two roles that
+AlphaConcept is a Windows-first remote administration tool with two roles that
 ship in one app: **host** (screen is shared and controlled) and **controller**
 (views and controls a host). Media and input travel peer-to-peer over WebRTC; a
 small signaling service only helps two authenticated, paired devices find each

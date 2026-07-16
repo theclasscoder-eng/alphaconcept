@@ -10,6 +10,7 @@ import type { Store } from './store.js';
 import type { SignalingClient } from './signaling.js';
 import type { InputController } from './inputController.js';
 import { listMonitors } from './capture.js';
+import { isElevated, relaunchElevated } from './system.js';
 import { showIndicator, hideIndicator, setMainStealth } from './windows.js';
 import type { AppTray } from './tray.js';
 import type {
@@ -60,6 +61,8 @@ const settingsPatchSchema = z
     clipboardSync: z.boolean(),
     quality: z.enum(['low', 'balanced', 'high']),
     frameRate: z.union([z.literal(15), z.literal(30), z.literal(60)]),
+    hideOverlay: z.boolean(),
+    hideAdminWarning: z.boolean(),
     unattendedDeviceIds: z.array(z.string()).max(1000),
   })
   .partial();
@@ -69,13 +72,20 @@ let stealthEnabled = false;
 export function registerIpc(ctx: IpcContext): void {
   const { store, signaling, input } = ctx;
 
+  /**
+   * The window can be closed to the tray at any time while signaling stays
+   * connected. Sending to a destroyed window throws "Object has been destroyed",
+   * so check liveness on every send.
+   */
+  const send = (channel: string, payload: unknown): void => {
+    const win = ctx.getMainWindow();
+    if (!win || win.isDestroyed() || win.webContents.isDestroyed()) return;
+    win.webContents.send(channel, payload);
+  };
+
   // Forward signaling messages and state to the renderer.
-  signaling.on('message', (msg) => {
-    ctx.getMainWindow()?.webContents.send('signaling:message', msg);
-  });
-  signaling.on('state', (state) => {
-    ctx.getMainWindow()?.webContents.send('signaling:state', state);
-  });
+  signaling.on('message', (msg) => send('signaling:message', msg));
+  signaling.on('state', (state) => send('signaling:state', state));
 
   // ---- device ----
   ipcMain.handle('device:getIdentity', () => store.getPublicIdentity());
@@ -131,9 +141,14 @@ export function registerIpc(ctx: IpcContext): void {
     const i = z
       .object({ controllerName: z.string().max(128), unattended: z.boolean() })
       .parse(info) as IndicatorInfo;
-    showIndicator(i.controllerName, i.unattended, stealthEnabled);
+    // The tray always reflects the active session (persistent indicator). The
+    // large on-screen overlay is shown only when the user hasn't hidden it.
+    if (!store.getSettings().hideOverlay) {
+      showIndicator(i.controllerName, i.unattended, stealthEnabled);
+    }
     ctx.setSessionActive(true, i.controllerName);
   });
+  ipcMain.handle('session:emergencyShortcut', () => ctx.tray.shortcutLabel);
   ipcMain.handle('session:hideIndicator', () => {
     hideIndicator();
     input.revoke();
@@ -147,7 +162,11 @@ export function registerIpc(ctx: IpcContext): void {
   ipcMain.handle('settings:get', () => store.getSettings());
   ipcMain.handle('settings:update', (_e, patch: unknown) => {
     const clean = settingsPatchSchema.parse(patch);
-    return store.updateSettings(clean);
+    const next = store.updateSettings(clean);
+    // Enabling "hide overlay" mid-session hides the banner immediately (the tray
+    // stays). Disabling it takes effect on the next session.
+    if (clean.hideOverlay === true) hideIndicator();
+    return next;
   });
   ipcMain.handle('settings:listPaired', () => store.listPaired());
   ipcMain.handle('settings:upsertPaired', (_e, device: unknown) => {
@@ -175,6 +194,10 @@ export function registerIpc(ctx: IpcContext): void {
   });
   ipcMain.handle('settings:history', () => store.getAudit());
   ipcMain.handle('settings:clearHistory', () => store.clearAudit());
+
+  // ---- system / elevation ----
+  ipcMain.handle('system:isElevated', () => isElevated());
+  ipcMain.handle('system:relaunchElevated', () => relaunchElevated());
 
   // ---- updates ----
   ipcMain.handle('updates:check', () => ({ current: app.getVersion() }));

@@ -55,6 +55,7 @@ const api: RemoteDesktopApi = {
     hideIndicator: () => ipcRenderer.invoke('session:hideIndicator') as Promise<void>,
     recordAudit: (entry: AuditEntry) =>
       ipcRenderer.invoke('session:recordAudit', entry) as Promise<void>,
+    emergencyShortcut: () => ipcRenderer.invoke('session:emergencyShortcut') as Promise<string>,
     onEmergencyStop: (cb: () => void) => subscribe('session:emergency-stop', () => cb()),
     onMonitorSelect: (cb: (index: number) => void) => subscribe('session:monitor-select', cb),
   },
@@ -77,6 +78,13 @@ const api: RemoteDesktopApi = {
   },
   updates: {
     check: () => ipcRenderer.invoke('updates:check') as Promise<{ current: string }>,
+  },
+  system: {
+    isElevated: () => ipcRenderer.invoke('system:isElevated') as Promise<boolean>,
+    relaunchElevated: () =>
+      ipcRenderer.invoke('system:relaunchElevated') as Promise<
+        'relaunching' | 'already-elevated' | 'cancelled' | 'unsupported'
+      >,
   },
 };
 
