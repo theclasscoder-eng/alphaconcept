@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AlphaConcept — updates</title>
+    <meta
+      name="description"
+      content="Download in-place updates for AlphaConcept. Patch an existing install without reinstalling the whole app."
+    />
+    <style>
+      :root {
+        --ink: #f2ece0;
+        --panel: #fdf9f1;
+        --panel-2: #f7f1e5;
+        --line: #e4d9c5;
+        --text: #3a3328;
+        --text-2: #726955;
+        --text-3: #a1957e;
+        --brand: #6f7fce;
+        --brand-strong: #5a6ac0;
+        --brand-ghost: rgba(111, 127, 206, 0.13);
+        --ok: #58a17c;
+        --ok-ghost: rgba(88, 161, 124, 0.14);
+        --shadow-1: 0 1px 2px rgba(96, 74, 42, 0.09);
+        --r-md: 14px;
+        --r-lg: 22px;
+        --font: 'Segoe UI Variable Display', 'Segoe UI', -apple-system, system-ui,
+          sans-serif;
+        --mono: 'Cascadia Code', 'Consolas', ui-monospace, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #1b1813;
+          --panel: #242019;
+          --panel-2: #2b261e;
+          --line: #3b3428;
+          --text: #f1e9db;
+          --text-2: #b8ad98;
+          --text-3: #857b6a;
+          --brand: #8b9ae4;
+          --brand-strong: #a3b0ee;
+          --brand-ghost: rgba(139, 154, 228, 0.16);
+          --ok: #7fc79e;
+          --ok-ghost: rgba(127, 199, 158, 0.16);
+          --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--ink);
+        color: var(--text);
+        font-family: var(--font);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: var(--brand-strong);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 22px 0;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: -0.01em;
+      }
+      .mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: linear-gradient(140deg, var(--brand-strong), var(--brand));
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-size: 16px;
+        box-shadow: 0 6px 16px var(--brand-ghost);
+      }
+      .navlinks {
+        display: flex;
+        gap: 18px;
+        font-size: 14px;
+        font-weight: 550;
+      }
+      .navlinks a {
+        color: var(--text-2);
+      }
+      .intro {
+        padding: 30px 0 8px;
+      }
+      h1 {
+        font-size: clamp(30px, 5vw, 42px);
+        letter-spacing: -0.03em;
+        margin: 0 0 12px;
+      }
+      .lead {
+        color: var(--text-2);
+        font-size: 17px;
+        margin: 0;
+        max-width: 620px;
+      }
+      /* ---- release card ---- */
+      .release {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        padding: 26px;
+        margin: 26px 0;
+        box-shadow: var(--shadow-1);
+      }
+      .release.latest {
+        border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+      }
+      .rel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .ver {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+      .ver h2 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: -0.02em;
+      }
+      .tag {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ok);
+        background: var(--ok-ghost);
+        padding: 4px 10px;
+        border-radius: 999px;
+      }
+      .meta {
+        color: var(--text-3);
+        font-size: 13px;
+        margin-top: 4px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-family: inherit;
+        font-size: 15px;
+        font-weight: 600;
+        padding: 12px 20px;
+        border-radius: var(--r-md);
+        border: 1px solid transparent;
+        background: linear-gradient(180deg, var(--brand-strong), var(--brand));
+        color: #fff;
+        cursor: pointer;
+        transition: transform 0.14s ease, box-shadow 0.16s ease;
+        box-shadow: 0 8px 20px var(--brand-ghost);
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px var(--brand-ghost);
+        text-decoration: none;
+      }
+      .notes {
+        margin: 18px 0 0;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+      }
+      .notes h3 {
+        margin: 0 0 8px;
+        font-size: 14px;
+        color: var(--text-2);
+      }
+      .notes ul {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--text-2);
+        font-size: 14.5px;
+      }
+      .notes li {
+        margin: 5px 0;
+      }
+      /* ---- apply steps ---- */
+      .panel {
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+        padding: 26px;
+        margin: 30px 0;
+      }
+      .panel h2 {
+        margin: 0 0 12px;
+        font-size: 20px;
+        letter-spacing: -0.02em;
+      }
+      ol {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--text-2);
+      }
+      ol li {
+        margin: 7px 0;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 13px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 1px 6px;
+      }
+      .callout {
+        font-size: 14px;
+        color: var(--text-2);
+        background: var(--brand-ghost);
+        border-radius: var(--r-md);
+        padding: 14px 16px;
+        margin: 24px 0;
+      }
+      footer {
+        border-top: 1px solid var(--line);
+        margin-top: 30px;
+        padding: 26px 0 46px;
+        color: var(--text-3);
+        font-size: 13px;
+        text-align: center;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="brand"><span class="mark">✦</span> AlphaConcept</div>
+        <nav class="navlinks">
+          <a href="/">Download</a>
+          <a href="https://github.com/theclasscoder-eng/alphaconcept"
+            >GitHub ↗</a
+          >
+        </nav>
+      </header>
+
+      <div class="intro">
+        <h1>Updates</h1>
+        <p class="lead">
+          Already have AlphaConcept installed? Grab the latest in-place update
+          below — it patches your existing app in seconds, no full reinstall and
+          no re-copying the ~90&nbsp;MB application.
+        </p>
+      </div>
+
+      <div class="callout">
+        First time installing? You want the full installer on the
+        <a href="/">download page</a> instead — these packages only patch an
+        app that's already installed.
+      </div>
+
+      <!-- LATEST -->
+      <div class="release latest">
+        <div class="rel-head">
+          <div>
+            <div class="ver">
+              <h2>0.1.9</h2>
+              <span class="tag">Latest</span>
+            </div>
+            <div class="meta">Released 2026-07-16 · ~160 KB · Windows 10 / 11</div>
+          </div>
+          <a class="btn" href="/downloads/AlphaConcept-Update-0.1.9.zip" download>
+            ⬇ Download update
+          </a>
+        </div>
+        <div class="notes">
+          <h3>What's new</h3>
+          <ul>
+            <li>
+              Brand-new "warm studio" look — cream light mode and a cozy dark
+              mode, soft pastel accents, and smoother animations.
+            </li>
+            <li>Light / dark is remembered per device (toggle in the sidebar).</li>
+            <li>
+              Presentation only — pairing, sessions, security, and shortcuts all
+              work exactly as before.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- HOW TO APPLY -->
+      <div class="panel">
+        <h2>How to apply an update</h2>
+        <ol>
+          <li>Download and extract the <code>.zip</code> above.</li>
+          <li>Close AlphaConcept (the updater will also close it for you).</li>
+          <li>
+            Double-click <code>apply-update.cmd</code>. If it can't find the app,
+            drag the folder containing <code>AlphaConcept.exe</code> onto it.
+          </li>
+          <li>Start AlphaConcept again — you're on the new version.</li>
+        </ol>
+        <p style="color: var(--text-2); font-size: 14px; margin-bottom: 0">
+          To roll back: delete <code>&lt;app&gt;\resources\app\out</code> and
+          rename <code>out.bak</code> back to <code>out</code>.
+        </p>
+      </div>
+
+      <footer>
+        Update every paired computer to the same version. ·
+        <a href="https://github.com/theclasscoder-eng/alphaconcept"
+          >Source on GitHub</a
+        >
+      </footer>
+    </div>
+  </body>
+</html>
