@@ -2,7 +2,7 @@
 
 Living status of the implementation. Updated from actual command output.
 
-_Last verified: 2026-07-15 on Windows 11 (Node 24.13.0, pnpm 11.5.3)._
+_Last verified: 2026-07-16 on Windows 11 (Node 24.13.0, pnpm 11.5.3)._
 
 ## Completed components
 
@@ -208,6 +208,28 @@ Three user-requested security asks:
 
 Note: the wire-format change means server + both apps must all be on 0.1.8.
 Data channel label generic-ized ('rdp-control' → 'dc'). 80 tests total.
+
+### 0.1.9 — UI redesign ("warm studio"), presentation-only
+
+Full visual redesign to remove the generic look, per user request: creamy /
+pastel, human, professional, smooth animations, both light and dark themes.
+
+- Rewrote `apps/desktop/src/renderer/styles.css` as a token-driven system with a
+  new palette: warm cream-paper light mode + warm cocoa-charcoal dark mode
+  (replacing the previous cool-navy scheme), a soft periwinkle accent used
+  sparingly, and pastel semantic colours (sage `--ok`, amber `--warn`/`--amber`,
+  rose `--bad`). Softer radii, warmer shadows, entrance/tab/toast/modal
+  animations gated behind `prefers-reduced-motion`.
+- **No component logic touched** — every existing class name, store selector, and
+  handler is unchanged; this is purely CSS tokens + rules. Added an `--amber`
+  alias used by `ElevationCard`.
+- Verified the design system standalone over HTTP with a temporary
+  `__preview.html` (since deleted): computed-style + WCAG contrast checks in both
+  themes — primary text 11–13:1, secondary >5:1, accents pass AA-large.
+- Gate green: `pnpm lint` 0 errors (7 pre-existing test-helper `any` warnings),
+  `pnpm typecheck` all projects, `pnpm test` 72 tests pass, `pnpm --filter
+  @rdp/desktop build` OK. JS/CSS-only, so the in-place update applies it fully
+  (no exe rebuild required for this change).
 
 ### Injected-input flag spoofing — DECLINED (not implemented)
 

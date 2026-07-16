@@ -25,7 +25,20 @@ ROLLBACK
 Delete  <app>\resources\app\out
 Rename  <app>\resources\app\out.bak  ->  out
 
-WHAT'S IN THIS UPDATE (0.1.8)
+WHAT'S IN THIS UPDATE (0.1.9)
+-----------------------------
+- REDESIGN: a completely new look and feel ("warm studio"). Cream-paper light
+  mode and a warm cocoa-charcoal dark mode replace the old cool-navy scheme,
+  with a soft periwinkle accent and pastel status colours (sage / amber / rose).
+  Softer rounded cards, calmer shadows, and smooth entrance/transition
+  animations that respect the OS "reduce motion" setting.
+  * Nothing about how the app works changed - same pairing, sessions, settings,
+    security, and shortcuts. This update is presentation only.
+  * Light / dark is remembered per device (toggle in the sidebar).
+  * This is a JS-only bundle change, so the in-place update applies it fully;
+    no reinstall needed.
+
+EARLIER (0.1.8)
 -----------------------------
 - PRIVACY: nothing identifies this as a remote-control tool outside the app UI.
   * The exe's Task Manager description / company name are now just

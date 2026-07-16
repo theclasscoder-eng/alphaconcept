@@ -1,45 +1,47 @@
 /* =========================================================================
-   AlphaConcept — "calm command console"
-   Design tokens first; components styled through tokens; both themes defined.
+   AlphaConcept — "warm studio"
+   Cream paper neutrals + soft pastel accents. Human, calm, unmistakably not
+   generic. Design tokens first; components styled through tokens; both themes.
    ========================================================================= */
 
 :root {
-  /* Neutrals — cool navy bias, deliberately not pure grey (dark is default). */
-  --ink: #0a0e17;
-  --panel: #111725;
-  --panel-2: #161d2e;
-  --panel-3: #1c2436;
-  --hover: #1a2233;
-  --line: #212a3d;
-  --line-soft: rgba(255, 255, 255, 0.06);
+  /* Neutrals — warm cocoa charcoal, never a cold grey (dark is default). */
+  --ink: #1b1813;
+  --panel: #242019;
+  --panel-2: #2b261e;
+  --panel-3: #332d24;
+  --hover: #322b21;
+  --line: #3b3428;
+  --line-soft: rgba(255, 244, 224, 0.07);
 
-  --text: #e8ecf5;
-  --text-2: #9aa6be;
-  --text-3: #67728c;
+  --text: #f1e9db;
+  --text-2: #b8ad98;
+  --text-3: #857b6a;
 
-  /* Signature — used sparingly. */
-  --brand: #4f7cff;
-  --brand-strong: #6d92ff;
-  --brand-ghost: rgba(79, 124, 255, 0.14);
-  --on-brand: #ffffff;
+  /* Signature — soft periwinkle, used sparingly. */
+  --brand: #8b9ae4;
+  --brand-strong: #a3b0ee;
+  --brand-ghost: rgba(139, 154, 228, 0.16);
+  --on-brand: #1a1c2b;
 
-  /* Semantic state (separate from the accent). */
-  --ok: #31d0a5;
-  --warn: #f5b544;
-  --bad: #ff6b6b;
+  /* Semantic state — pastel-toned, separate from the accent. */
+  --ok: #7fc79e;
+  --warn: #e3b565;
+  --amber: #e3b565;
+  --bad: #e69184;
 
-  --focus: rgba(79, 124, 255, 0.55);
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.45);
-  --shadow-pop: 0 16px 48px rgba(0, 0, 0, 0.55);
+  --focus: rgba(139, 154, 228, 0.6);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 12px 30px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 18px 50px rgba(0, 0, 0, 0.5);
 
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
   --r-pill: 999px;
 
   --sp: 8px;
-  --rail: 232px;
+  --rail: 236px;
 
   --font: 'Segoe UI Variable Display', 'Segoe UI Variable', -apple-system,
     'Segoe UI', system-ui, sans-serif;
@@ -50,30 +52,33 @@
 }
 
 :root[data-theme='light'] {
-  --ink: #eef1f8;
-  --panel: #ffffff;
-  --panel-2: #f5f7fc;
-  --panel-3: #eef1f8;
-  --hover: #f0f3fa;
-  --line: #dbe1ee;
-  --line-soft: rgba(20, 30, 60, 0.08);
+  /* Warm cream paper. */
+  --ink: #f2ece0;
+  --panel: #fdf9f1;
+  --panel-2: #f7f1e5;
+  --panel-3: #efe7d7;
+  --hover: #f0e8d9;
+  --line: #e4d9c5;
+  --line-soft: rgba(96, 74, 42, 0.1);
 
-  --text: #141a29;
-  --text-2: #515d76;
-  --text-3: #8b93a7;
+  --text: #3a3328;
+  --text-2: #726955;
+  --text-3: #a1957e;
 
-  --brand: #3457e8;
-  --brand-strong: #2b49cf;
-  --brand-ghost: rgba(52, 87, 232, 0.1);
+  --brand: #6f7fce;
+  --brand-strong: #5a6ac0;
+  --brand-ghost: rgba(111, 127, 206, 0.13);
   --on-brand: #ffffff;
 
-  --ok: #12a37e;
-  --warn: #c8860e;
-  --bad: #e0483f;
+  --ok: #58a17c;
+  --warn: #c68b3c;
+  --amber: #c68b3c;
+  --bad: #cd6d5f;
 
-  --shadow-1: 0 1px 2px rgba(20, 30, 60, 0.08);
-  --shadow-2: 0 12px 30px rgba(20, 30, 60, 0.12);
-  --shadow-pop: 0 18px 50px rgba(20, 30, 60, 0.18);
+  --focus: rgba(111, 127, 206, 0.5);
+  --shadow-1: 0 1px 2px rgba(96, 74, 42, 0.09);
+  --shadow-2: 0 12px 30px rgba(96, 74, 42, 0.12);
+  --shadow-pop: 0 18px 50px rgba(96, 74, 42, 0.18);
 }
 
 * {
