@@ -20,3 +20,6 @@ apps/desktop/release/
 services/signaling/prisma/migrations/dev.db
 .vite/
 .turbo/
+
+# Electron build output
+apps/desktop/release-new/
