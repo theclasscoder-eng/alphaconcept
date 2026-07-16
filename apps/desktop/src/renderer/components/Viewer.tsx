@@ -292,11 +292,8 @@ function ShortcutMenu(): JSX.Element {
         Shortcuts ▾
       </button>
       {open && (
-        <div
-          className="card"
-          style={{ position: 'absolute', top: 36, right: 0, zIndex: 10, width: 240, margin: 0 }}
-        >
-          <div className="stack">
+        <div className="menu" style={{ width: 240 }}>
+          <div>
             {COMMON_SHORTCUTS.map((s) => (
               <button
                 key={s.label}

@@ -6,9 +6,11 @@
  */
 import { create } from 'zustand';
 import type { ServerMessage, PeerInfo } from '@rdp/protocol';
+import { parseControlMessage } from '@rdp/protocol/browser';
 import { rd } from './api.js';
 import { ControllerSession } from './session/controller.js';
 import { HostSession } from './session/host.js';
+import { computeCodeProof } from './session/proof.js';
 import type { ConnectionQuality } from './session/stats.js';
 import type {
   AppSettings,
@@ -52,6 +54,8 @@ interface State {
   remoteStream: MediaStream | null;
   banner: string | null;
   history: AuditEntry[];
+  /** Controller-side prompt for the host's per-connection code. */
+  codePrompt: { open: boolean; error: string | null };
 
   init(): Promise<void>;
   refreshPaired(): Promise<void>;
@@ -70,6 +74,7 @@ interface State {
   approveIncoming(): Promise<void>;
   rejectIncoming(reason?: string): Promise<void>;
   endSession(reason?: string): Promise<void>;
+  submitConnectionCode(code: string): Promise<void>;
 
   setUnattended(deviceId: string, enabled: boolean): Promise<void>;
   revokeDevice(deviceId: string): Promise<void>;
@@ -86,6 +91,7 @@ let controllerSession: ControllerSession | null = null;
 let hostSession: HostSession | null = null;
 let currentAudit: AuditEntry | null = null;
 let pendingApproval: { pairingId: string; unattended: boolean; peer?: PeerInfo } | null = null;
+let hostCodeFails = 0;
 
 function uid(): string {
   return `a-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -213,8 +219,18 @@ export const useStore = create<State>((set, get) => {
             onStream: (stream) => set({ remoteStream: stream }),
             onQuality: (q) => set((s) => ({ session: { ...s.session, quality: q } })),
             onClosed: () => teardownSession('failed', 'server'),
-            onChannelOpen: () =>
-              set((s) => ({ session: { ...s.session, phase: 'active' } })),
+            onChannelOpen: () => set((s) => ({ session: { ...s.session, phase: 'active' } })),
+            onControl: (raw) => {
+              const parsed = parseControlMessage(raw);
+              if (!parsed.success) return;
+              const cm = parsed.data;
+              if (cm.type === 'control.codeRequired') {
+                set({ codePrompt: { open: true, error: null } });
+              } else if (cm.type === 'control.codeResult') {
+                if (cm.ok) set({ codePrompt: { open: false, error: null }, banner: 'Connection code accepted' });
+                else set({ codePrompt: { open: true, error: 'Incorrect code — try again.' } });
+              }
+            },
           });
           set((s) => ({ session: { ...s.session, phase: 'connecting' } }));
           await controllerSession.start();
@@ -227,18 +243,58 @@ export const useStore = create<State>((set, get) => {
             return;
           }
           const settings = get().settings;
+          const controllerDeviceId = msg.peer.deviceId;
+          const sessionId = msg.sessionId;
+          hostCodeFails = 0;
+
+          // Authorizing input is DEFERRED until (a) the control channel opens and
+          // (b) the per-connection code — if this device requires one — is proven.
+          const authorizeHostInput = () =>
+            rd.session.setActiveDisplay({
+              bounds: monitor.bounds,
+              scaleFactor: monitor.scaleFactor,
+            });
+
           hostSession = new HostSession(
             msg.sessionId,
             msg.iceServers,
             monitor,
             send,
             {
-              onControl: (raw) => void rd.session.injectControl(raw),
+              onControl: async (raw) => {
+                const parsed = parseControlMessage(raw);
+                if (parsed.success) {
+                  const cm = parsed.data;
+                  if (cm.type === 'control.hello') {
+                    // Gate input on a connection code if one is set for this device.
+                    if (await rd.session.requiresCode(controllerDeviceId)) {
+                      hostSession?.sendControl({ type: 'control.codeRequired' });
+                    } else {
+                      await authorizeHostInput();
+                    }
+                    return;
+                  }
+                  if (cm.type === 'control.codeProof') {
+                    const ok = await rd.session.verifyCode(controllerDeviceId, sessionId, cm.proof);
+                    hostSession?.sendControl({ type: 'control.codeResult', ok });
+                    if (ok) {
+                      hostCodeFails = 0;
+                      await authorizeHostInput();
+                    } else {
+                      hostCodeFails += 1;
+                      set({ banner: 'Controller entered an incorrect connection code' });
+                      if (hostCodeFails >= 3) await get().endSession('too many bad codes');
+                    }
+                    return;
+                  }
+                }
+                // Everything else is input/clipboard/monitor. Main re-validates
+                // and drops it while input is not yet authorized.
+                void rd.session.injectControl(raw);
+              },
               onQuality: (q) => set((s) => ({ session: { ...s.session, quality: q } })),
               onClosed: () => teardownSession('ended', 'server'),
               onCaptureError: (m) => {
-                // Don't leave the controller staring at a black screen: surface
-                // the error here and end the session so it gets a clear signal.
                 set({ banner: `Capture error: ${m}` });
                 void get().endSession('host capture failed');
               },
@@ -246,10 +302,6 @@ export const useStore = create<State>((set, get) => {
             settings?.quality ?? 'balanced',
             settings?.frameRate ?? 30,
           );
-          await rd.session.setActiveDisplay({
-            bounds: monitor.bounds,
-            scaleFactor: monitor.scaleFactor,
-          });
           await rd.session.showIndicator({
             controllerName: msg.peer.name,
             unattended: get().session.unattended,
@@ -315,6 +367,7 @@ export const useStore = create<State>((set, get) => {
     remoteStream: null,
     banner: null,
     history: [],
+    codePrompt: { open: false, error: null },
 
     async init() {
       const [identity, settings, paired] = await Promise.all([
@@ -412,7 +465,17 @@ export const useStore = create<State>((set, get) => {
       const sid = get().session.sessionId;
       if (sid) send({ type: 'session.end', sessionId: sid, reason });
       teardownSession('ended', get().session.role === 'host' ? 'host' : 'controller');
-      set((s) => ({ session: { ...s.session, phase: 'idle', role: null, sessionId: null } }));
+      set((s) => ({
+        session: { ...s.session, phase: 'idle', role: null, sessionId: null },
+        codePrompt: { open: false, error: null },
+      }));
+    },
+    async submitConnectionCode(code) {
+      const sid = get().session.sessionId;
+      if (!sid || !controllerSession) return;
+      const proof = await computeCodeProof(code, sid);
+      controllerSession.sendControl({ type: 'control.codeProof', proof });
+      set((s) => ({ codePrompt: { ...s.codePrompt, error: null } }));
     },
 
     async setUnattended(deviceId, enabled) {

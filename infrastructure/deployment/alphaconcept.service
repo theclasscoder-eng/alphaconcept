@@ -1,0 +1,39 @@
+# systemd unit for the AlphaConcept signaling service (Linux).
+#
+# Install:
+#   sudo cp infrastructure/deployment/alphaconcept.service /etc/systemd/system/AlphaConcept.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now AlphaConcept
+#
+# Status / logs:
+#   systemctl status AlphaConcept
+#   journalctl -u AlphaConcept -f
+#
+# Service Name = AlphaConcept (the unit filename), Description = AlphaConcept —
+# uniform naming per configuration.
+
+[Unit]
+Description=AlphaConcept
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust these paths to your deployment.
+WorkingDirectory=/opt/alphaconcept/services/signaling
+EnvironmentFile=/opt/alphaconcept/.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=3
+# Run as an unprivileged, dedicated account.
+User=alphaconcept
+Group=alphaconcept
+# Basic hardening.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/alphaconcept
+
+[Install]
+WantedBy=multi-user.target

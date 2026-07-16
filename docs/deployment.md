@@ -96,6 +96,20 @@ certbot, and point the desktop app's **Signaling server URL** to
   challenges. Rotating `TURN_SHARED_SECRET` must be done on coturn and the
   signaling service together.
 
+## Running as a background service (optional)
+
+The signaling server can run as a managed OS service. Service Name, Display Name,
+and Description all use **AlphaConcept** uniformly (single source of truth:
+`packages/config` → `SERVICE`).
+
+- **Windows:** `infrastructure/deployment/windows-service/Install-AlphaConceptService.ps1`
+  (NSSM-based; installs a service named `AlphaConcept`).
+- **Linux:** `infrastructure/deployment/alphaconcept.service` (systemd unit
+  `AlphaConcept`).
+
+See `infrastructure/deployment/windows-service/README.md`. The desktop app is a
+GUI program and is not run as a service.
+
 ## Scaling notes
 
 The default in-process presence/session registry assumes a single signaling

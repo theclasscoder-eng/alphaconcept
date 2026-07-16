@@ -10,6 +10,8 @@ import {
   PROTOCOL_VERSION,
   randomId,
   parseServerMessage,
+  encodeWire,
+  decodeWire,
   type ServerMessage,
 } from '@rdp/protocol';
 import type { OutgoingSignal, SignalingState } from '../shared-app/types.js';
@@ -95,7 +97,7 @@ export class SignalingClient extends EventEmitter {
   private onRaw(data: WebSocket.RawData): void {
     let raw: unknown;
     try {
-      raw = JSON.parse(data.toString());
+      raw = decodeWire(JSON.parse(data.toString()));
     } catch {
       return;
     }
@@ -156,7 +158,7 @@ export class SignalingClient extends EventEmitter {
 
   private rawSend(obj: unknown): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(obj));
+      this.ws.send(JSON.stringify(encodeWire(obj as Record<string, unknown>)));
     }
   }
 }

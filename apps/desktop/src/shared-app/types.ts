@@ -130,6 +130,10 @@ export interface RemoteDesktopApi {
     recordAudit(entry: AuditEntry): Promise<void>;
     /** The registered host emergency-stop accelerator, e.g. "Ctrl+Alt+F12". */
     emergencyShortcut(): Promise<string>;
+    /** Host: does this controller device require a connection code before input? */
+    requiresCode(deviceId: string): Promise<boolean>;
+    /** Host: verify a controller's code proof for a session. */
+    verifyCode(deviceId: string, sessionId: string, proof: string): Promise<boolean>;
     onEmergencyStop(cb: () => void): () => void;
     onMonitorSelect(cb: (index: number) => void): () => void;
   };
@@ -139,6 +143,10 @@ export interface RemoteDesktopApi {
     listPaired(): Promise<PairedDevice[]>;
     upsertPaired(device: PairedDevice): Promise<void>;
     setUnattended(deviceId: string, enabled: boolean): Promise<void>;
+    /** Host: set (or clear, with null) the connection code required from a device. */
+    setConnectionCode(deviceId: string, code: string | null): Promise<void>;
+    /** Host: device ids that currently have a connection code set. */
+    codeDeviceIds(): Promise<string[]>;
     revokeDevice(deviceId: string): Promise<void>;
     revokeAll(): Promise<string[]>;
     setAutostart(enabled: boolean): Promise<boolean>;

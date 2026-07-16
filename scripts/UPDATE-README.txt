@@ -25,8 +25,27 @@ ROLLBACK
 Delete  <app>\resources\app\out
 Rename  <app>\resources\app\out.bak  ->  out
 
-WHAT'S IN THIS UPDATE (0.1.6)
+WHAT'S IN THIS UPDATE (0.1.8)
 -----------------------------
+- PRIVACY: nothing identifies this as a remote-control tool outside the app UI.
+  * The exe's Task Manager description / company name are now just
+    "AlphaConcept" (no "remote", "desktop", "control", "Windows", "WebRTC").
+    NOTE: this metadata is baked into the exe, so it only changes with a FULL
+    build (release-new\win-unpacked\AlphaConcept.exe) - the JS-only in-place
+    update cannot change it.
+  * Signaling messages are obfuscated on the wire: message-type names like
+    "webrtc.offer" / "session.request" are replaced with opaque codes so a
+    packet sniffer can't tell it's a remote session. (Defense-in-depth only -
+    for real protection against capture use a wss:// signaling URL.)
+- SECURITY: per-connection codes. In Settings, the host can require a secret
+  code per paired device. The controller enters it live each session (never
+  stored on the controller) and proves it over the encrypted channel before
+  input is allowed. A breach of one paired computer can't unlock the others.
+- IMPORTANT: because the wire format changed, ALL parts must be on 0.1.8 -
+  update BOTH apps and rebuild + restart the signaling server (pnpm build).
+
+EARLIER (0.1.6)
+---------------
 - RENAMED to "AlphaConcept" (window title, tray, app name, installer). A fresh
   full build produces AlphaConcept.exe; existing "Remote Desktop.exe" copies
   keep their exe name but show the AlphaConcept branding after updating.

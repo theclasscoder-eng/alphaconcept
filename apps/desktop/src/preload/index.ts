@@ -56,6 +56,10 @@ const api: RemoteDesktopApi = {
     recordAudit: (entry: AuditEntry) =>
       ipcRenderer.invoke('session:recordAudit', entry) as Promise<void>,
     emergencyShortcut: () => ipcRenderer.invoke('session:emergencyShortcut') as Promise<string>,
+    requiresCode: (deviceId: string) =>
+      ipcRenderer.invoke('session:requiresCode', deviceId) as Promise<boolean>,
+    verifyCode: (deviceId: string, sessionId: string, proof: string) =>
+      ipcRenderer.invoke('session:verifyCode', deviceId, sessionId, proof) as Promise<boolean>,
     onEmergencyStop: (cb: () => void) => subscribe('session:emergency-stop', () => cb()),
     onMonitorSelect: (cb: (index: number) => void) => subscribe('session:monitor-select', cb),
   },
@@ -68,6 +72,9 @@ const api: RemoteDesktopApi = {
       ipcRenderer.invoke('settings:upsertPaired', device) as Promise<void>,
     setUnattended: (deviceId: string, enabled: boolean) =>
       ipcRenderer.invoke('settings:setUnattended', deviceId, enabled) as Promise<void>,
+    setConnectionCode: (deviceId: string, code: string | null) =>
+      ipcRenderer.invoke('settings:setConnectionCode', deviceId, code) as Promise<void>,
+    codeDeviceIds: () => ipcRenderer.invoke('settings:codeDeviceIds') as Promise<string[]>,
     revokeDevice: (deviceId: string) =>
       ipcRenderer.invoke('settings:revokeDevice', deviceId) as Promise<void>,
     revokeAll: () => ipcRenderer.invoke('settings:revokeAll') as Promise<string[]>,

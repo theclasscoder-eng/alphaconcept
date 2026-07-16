@@ -21,6 +21,8 @@ export interface ControllerCallbacks {
   onQuality: (q: ConnectionQuality) => void;
   onClosed: (reason: string) => void;
   onChannelOpen: () => void;
+  /** Incoming control message from the host (e.g. code handshake). */
+  onControl: (raw: unknown) => void;
 }
 
 export class ControllerSession {
@@ -42,6 +44,13 @@ export class ControllerSession {
     this.channel.onopen = () => {
       this.sendControl({ type: 'control.hello', role: 'controller', protocolVersion: INPUT_PROTOCOL_VERSION });
       this.cb.onChannelOpen();
+    };
+    this.channel.onmessage = (ev) => {
+      try {
+        this.cb.onControl(JSON.parse(typeof ev.data === 'string' ? ev.data : ''));
+      } catch {
+        /* ignore malformed */
+      }
     };
     this.pc.addTransceiver('video', { direction: 'recvonly' });
     this.pc.ontrack = (e) => {

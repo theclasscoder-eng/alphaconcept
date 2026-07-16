@@ -161,6 +161,26 @@ export function createAuthChallenge(secret: string, ttlMs: number): AuthChalleng
 }
 
 /** Verify a challenge's MAC and freshness. Returns false on tamper/expiry. */
+/**
+ * Per-connection code proof. The host stores a per-controller secret code; the
+ * controller enters it live each session (it is never stored on the controller)
+ * and proves knowledge without sending the code: proof = HMAC-SHA256(code,
+ * sessionId), hex. Binding to the random sessionId prevents replay. This limits
+ * blast radius — compromising one paired device does not grant access, because
+ * the per-connection code is still required and differs per host.
+ */
+export function connectionCodeProof(code: string, sessionId: string): string {
+  return createHmac('sha256', code).update(sessionId).digest('hex');
+}
+
+/** Constant-time comparison of two hex proof strings. */
+export function proofsEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a, 'utf8');
+  const bb = Buffer.from(b, 'utf8');
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
+
 export function verifyAuthChallenge(secret: string, challenge: AuthChallenge): boolean {
   if (typeof challenge.expiresAt !== 'number' || Date.now() > challenge.expiresAt) return false;
   const expected = createHmac('sha256', secret)

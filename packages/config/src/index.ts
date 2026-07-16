@@ -8,6 +8,17 @@ import { z } from 'zod';
 /** A public STUN server needs no credentials. */
 export const DEFAULT_STUN_URL = 'stun:stun.l.google.com:19302';
 
+/**
+ * Single source of truth for OS service-manager identity. If the signaling
+ * service is installed as a background service (Windows SCM or Linux systemd),
+ * the Service Name, Display Name, and Description all use this uniformly.
+ */
+export const SERVICE = {
+  name: 'AlphaConcept',
+  displayName: 'AlphaConcept',
+  description: 'AlphaConcept',
+} as const;
+
 export const iceServerConfigSchema = z.object({
   urls: z.union([z.string(), z.array(z.string())]),
   username: z.string().optional(),

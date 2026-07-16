@@ -9,6 +9,7 @@ import {
   deviceIdFromPublicKey,
   signMessage,
   randomId,
+  decodeWire,
   type DeviceKeyPair,
 } from '@rdp/protocol';
 
@@ -80,7 +81,7 @@ export class TestClient {
     // immediately-sent challenge frame cannot race ahead of the listener.
     this.ws.on('message', (data) => {
       try {
-        this.dispatch(JSON.parse(data.toString()));
+        this.dispatch(decodeWire(JSON.parse(data.toString())));
       } catch {
         /* ignore */
       }

@@ -252,6 +252,37 @@ export type ServerMessage = z.infer<typeof serverMessage>;
 export const anyMessage = z.union([clientMessage, serverMessage]);
 export type AnyMessage = z.infer<typeof anyMessage>;
 
+/** Every signaling message `type` value (client + server). Used by the wire codec. */
+export const SIGNALING_TYPES: readonly string[] = [
+  'device.authenticate',
+  'device.presence.set',
+  'pairing.create',
+  'pairing.join',
+  'pairing.approve',
+  'pairing.reject',
+  'session.request',
+  'session.approve',
+  'session.reject',
+  'webrtc.offer',
+  'webrtc.answer',
+  'webrtc.ice-candidate',
+  'session.heartbeat',
+  'session.end',
+  'device.revoke',
+  'device.challenge',
+  'device.authenticated',
+  'device.presence',
+  'pairing.created',
+  'pairing.pending',
+  'pairing.result',
+  'session.incoming',
+  'session.approved',
+  'session.rejected',
+  'session.ended',
+  'device.revoked',
+  'error',
+] as const;
+
 /** Safe-parse a raw string/object as a client message. */
 export function parseClientMessage(raw: unknown): z.SafeParseReturnType<unknown, ClientMessage> {
   return clientMessage.safeParse(raw);

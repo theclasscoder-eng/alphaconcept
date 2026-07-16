@@ -1,6 +1,6 @@
 # AlphaConcept (Windows-first)
 
-A secure, self-hostable remote desktop application. One app runs as either a
+AlphaConcept is a secure, self-hostable remote-control application. One app runs as either a
 **host** (its screen is shared and controlled) or a **controller** (views and
 controls a paired host). Screen and input travel peer-to-peer over **WebRTC**; a
 small **signaling** service only helps paired, authenticated devices connect.

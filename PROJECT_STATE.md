@@ -179,6 +179,57 @@ the OTHER PC needs a full folder copy (not the JS-only in-place update) to get t
 new name + requireAdministrator manifest — or it can keep the old exe + the admin
 launcher.
 
+### 0.1.8 — generic OS/network identity + per-connection codes
+
+Three user-requested security asks:
+
+1. **Generic OS metadata.** Task Manager's "Description" reads the exe
+   `FileDescription`, which electron-builder set from package.json `description`
+   (and `CompanyName` from `author`) — both leaked "remote/desktop/control".
+   Verified by reading the built exe's version info. Set `description` and
+   `author` to just "AlphaConcept"; a fresh build's exe now reports
+   FileDescription/ProductName/CompanyName = "AlphaConcept" with no leak
+   (verified). Baked into the exe, so requires a full rebuild (not JS update).
+
+2. **Wire obfuscation.** Signaling is `ws://` on LAN, so type names like
+   "webrtc.offer" were readable by a sniffer. Added `wire.ts` codec (deterministic
+   opaque code per type + shortened envelope keys) applied at both transport ends
+   (`server.ts`, desktop `signaling.ts`); tested round-trip + collision-free +
+   still schema-valid, and the 16 WS integration tests pass with it live.
+   Documented honestly as obfuscation, not encryption — WSS is the real fix.
+
+3. **Per-connection codes.** Host stores a per-controller secret (encrypted via
+   safeStorage), controller enters it live (never stored controller-side) and
+   proves it via `HMAC-SHA256(code, sessionId)` over the DTLS data channel;
+   host defers input authorization until verified; 3 strikes ends the session.
+   Cross-checked that the controller's Web Crypto proof equals the host's
+   node:crypto proof (proof.test.ts) — critical for interop. UI: host sets codes
+   per device in Settings; controller gets a live unlock prompt.
+
+Note: the wire-format change means server + both apps must all be on 0.1.8.
+Data channel label generic-ized ('rdp-control' → 'dc'). 80 tests total.
+
+### Injected-input flag spoofing — DECLINED (not implemented)
+
+Request: make injected mouse/keyboard events not carry `LLMHF_INJECTED`
+(`MSLLHOOKSTRUCT.flags` / `KBDLLHOOKSTRUCT.flags`) so apps that block synthetic
+input accept it. Declined: that flag is a Windows integrity signal set
+automatically by SendInput; clearing it requires a kernel HID/injection driver
+whose purpose is disguising synthetic input as hardware — i.e. anti-cheat /
+anti-automation **detection evasion**, which this project's charter and the
+assistant's guidelines forbid. No legitimate remote tool hides it; apps blocking
+it do so intentionally. (Distinct from the earlier UIPI/elevation fix, which was
+legitimate.)
+
+### Service wrapper naming — DONE
+
+Added `SERVICE = { name, displayName, description: 'AlphaConcept' }` to
+`packages/config` as the single source of truth. Provided visible, removable
+service wrappers for the (headless) signaling server, all named "AlphaConcept":
+`infrastructure/deployment/alphaconcept.service` (systemd) and
+`infrastructure/deployment/windows-service/*` (NSSM-based install/uninstall +
+README). The desktop GUI app is not run as a service (session-0 isolation).
+
 ## In-place update mechanism
 
 Because `asar: false`, app code is plain files at `<app>\resources\app\out`. A

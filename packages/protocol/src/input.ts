@@ -123,6 +123,19 @@ export const monitorSelectMessage = control('control.monitor', {
   index: z.number().int().min(0).max(64),
 });
 
+// ---- Per-connection code handshake (over the DTLS-encrypted data channel) --
+/** Host → controller: this host requires a connection code before granting input. */
+export const codeRequiredMessage = control('control.codeRequired', {});
+/** Controller → host: proof of the code (HMAC over sessionId); code never sent. */
+export const codeProofMessage = control('control.codeProof', {
+  proof: z.string().min(1).max(256),
+});
+/** Host → controller: whether the proof was accepted. */
+export const codeResultMessage = control('control.codeResult', {
+  ok: z.boolean(),
+  message: z.string().max(200).optional(),
+});
+
 export const controlMessage = z.discriminatedUnion('type', [
   helloMessage,
   mouseMoveMessage,
@@ -134,6 +147,9 @@ export const controlMessage = z.discriminatedUnion('type', [
   shortcutMessage,
   clipboardMessage,
   monitorSelectMessage,
+  codeRequiredMessage,
+  codeProofMessage,
+  codeResultMessage,
 ]);
 export type ControlMessage = z.infer<typeof controlMessage>;
 

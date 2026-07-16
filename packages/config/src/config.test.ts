@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { buildIceServers, connectionConfigSchema, DEFAULT_STUN_URL } from './index.js';
+import { buildIceServers, connectionConfigSchema, DEFAULT_STUN_URL, SERVICE } from './index.js';
+
+describe('service identity', () => {
+  it('uses AlphaConcept uniformly for name, display, and description', () => {
+    expect(SERVICE.name).toBe('AlphaConcept');
+    expect(SERVICE.displayName).toBe('AlphaConcept');
+    expect(SERVICE.description).toBe('AlphaConcept');
+  });
+});
 
 describe('buildIceServers', () => {
   it('returns STUN only when no TURN is provided', () => {

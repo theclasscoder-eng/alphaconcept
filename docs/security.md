@@ -56,6 +56,33 @@ authorized relationship.
   can no longer establish sessions (verified by an integration test).
 - "Revoke all devices" clears every pairing and unattended grant at once.
 
+## Per-connection codes
+
+Beyond pairing, the host can require a **secret connection code** per controller
+device. The code is stored **encrypted on the host** (safeStorage/DPAPI) and is
+entered **live on the controller each session — never stored there**. The
+controller proves knowledge without transmitting the code:
+`proof = HMAC-SHA256(code, sessionId)`, verified over the DTLS-encrypted data
+channel before the host authorizes any input. Because the code is per-device and
+lives only in the operator's head plus the host, **a breach of one paired device
+grants nothing** — the attacker still lacks the code, and each host has its own.
+Three wrong attempts end the session.
+
+## Wire privacy (anti-fingerprinting)
+
+To reduce what a passive network observer learns, the signaling messages are
+sent in a compact, obfuscated form: message-type names ("webrtc.offer",
+"session.request", …) are replaced with opaque codes and the envelope keys are
+shortened, so casual packet capture cannot identify the traffic as a
+remote-control session. The OS-visible metadata (executable description, company
+name, window/tray titles surfaced to Task Manager) is deliberately generic —
+nothing there says "remote", "desktop", or "control".
+
+**This is defense-in-depth, not a substitute for encryption.** The obfuscation
+does not protect the payload contents on a plaintext `ws://` link. For real
+protection against packet capture, point the app at a **`wss://` signaling URL**
+(TLS) — the WebRTC media/input is already DTLS/SRTP encrypted regardless.
+
 ## Transport & data handling
 
 - Media is SRTP; the input/clipboard data channel is DTLS — end-to-end encrypted

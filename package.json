@@ -1,9 +1,9 @@
 {
-  "name": "remote-desktop-monorepo",
+  "name": "AlphaConcept",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Windows-first secure remote desktop application (host + controller) over WebRTC.",
+  "description": "AlphaConcept — first attempt at the program",
   "engines": {
     "node": ">=20"
   },

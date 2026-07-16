@@ -18,6 +18,8 @@ import {
   deviceIdFromPublicKey,
   fingerprint,
   signMessage,
+  connectionCodeProof,
+  proofsEqual,
   FRAME_RATE_OPTIONS,
 } from '@rdp/protocol';
 import { DEFAULT_SIGNALING_URL, DEFAULT_STUN_URL } from '@rdp/config';
@@ -54,6 +56,7 @@ export class Store {
   private readonly settingsPath: string;
   private readonly pairedPath: string;
   private readonly auditPath: string;
+  private readonly codesPath: string;
 
   private privateKey: string | null = null;
   private identity!: IdentityFile;
@@ -65,6 +68,7 @@ export class Store {
     this.settingsPath = join(this.dir, 'settings.json');
     this.pairedPath = join(this.dir, 'paired.json');
     this.auditPath = join(this.dir, 'audit.json');
+    this.codesPath = join(this.dir, 'codes.json');
     this.loadIdentity();
   }
 
@@ -184,12 +188,14 @@ export class Store {
     this.updateSettings({
       unattendedDeviceIds: s.unattendedDeviceIds.filter((id) => id !== deviceId),
     });
+    this.setConnectionCode(deviceId, null);
   }
 
   clearPaired(): string[] {
     const ids = this.listPaired().map((d) => d.deviceId);
     writeJson(this.pairedPath, []);
     this.updateSettings({ unattendedDeviceIds: [] });
+    writeJson(this.codesPath, {});
     return ids;
   }
 
@@ -205,6 +211,49 @@ export class Store {
 
   isUnattendedAllowed(deviceId: string): boolean {
     return this.getSettings().unattendedDeviceIds.includes(deviceId);
+  }
+
+  // ---- per-connection codes ----------------------------------------------
+  //
+  // The HOST stores, per controller device, an optional secret code encrypted at
+  // rest (safeStorage/DPAPI). The controller enters it live each session — it is
+  // never stored on the controller — and proves knowledge over the DTLS channel
+  // via HMAC(code, sessionId). So a breach of one paired device grants nothing
+  // without also knowing the per-connection code, and each host has its own.
+
+  setConnectionCode(deviceId: string, code: string | null): void {
+    const map = readJson<Record<string, string>>(this.codesPath, {});
+    const clean = (code ?? '').trim();
+    if (!clean) {
+      delete map[deviceId];
+    } else {
+      this.ensureEncryption();
+      map[deviceId] = safeStorage.encryptString(clean).toString('base64');
+    }
+    writeJson(this.codesPath, map);
+  }
+
+  requiresConnectionCode(deviceId: string): boolean {
+    const map = readJson<Record<string, string>>(this.codesPath, {});
+    return typeof map[deviceId] === 'string' && map[deviceId]!.length > 0;
+  }
+
+  listConnectionCodeDeviceIds(): string[] {
+    return Object.keys(readJson<Record<string, string>>(this.codesPath, {}));
+  }
+
+  /** Verify a controller's HMAC proof against the stored code for this device. */
+  verifyConnectionProof(deviceId: string, sessionId: string, proof: string): boolean {
+    const map = readJson<Record<string, string>>(this.codesPath, {});
+    const enc = map[deviceId];
+    if (!enc) return true; // no code required for this device
+    try {
+      this.ensureEncryption();
+      const code = safeStorage.decryptString(Buffer.from(enc, 'base64')).toString();
+      return proofsEqual(connectionCodeProof(code, sessionId), proof);
+    } catch {
+      return false;
+    }
   }
 
   // ---- audit --------------------------------------------------------------

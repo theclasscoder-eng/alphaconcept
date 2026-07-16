@@ -149,6 +149,16 @@ export function registerIpc(ctx: IpcContext): void {
     ctx.setSessionActive(true, i.controllerName);
   });
   ipcMain.handle('session:emergencyShortcut', () => ctx.tray.shortcutLabel);
+  ipcMain.handle('session:requiresCode', (_e, deviceId: unknown) =>
+    store.requiresConnectionCode(z.string().parse(deviceId)),
+  );
+  ipcMain.handle('session:verifyCode', (_e, deviceId: unknown, sessionId: unknown, proof: unknown) =>
+    store.verifyConnectionProof(
+      z.string().parse(deviceId),
+      z.string().max(128).parse(sessionId),
+      z.string().max(256).parse(proof),
+    ),
+  );
   ipcMain.handle('session:hideIndicator', () => {
     hideIndicator();
     input.revoke();
@@ -175,6 +185,12 @@ export function registerIpc(ctx: IpcContext): void {
   ipcMain.handle('settings:setUnattended', (_e, deviceId: unknown, enabled: unknown) => {
     store.setUnattended(z.string().parse(deviceId), z.boolean().parse(enabled));
   });
+  ipcMain.handle('settings:setConnectionCode', (_e, deviceId: unknown, code: unknown) => {
+    const id = z.string().parse(deviceId);
+    const value = code == null ? null : z.string().max(256).parse(code);
+    store.setConnectionCode(id, value);
+  });
+  ipcMain.handle('settings:codeDeviceIds', () => store.listConnectionCodeDeviceIds());
   ipcMain.handle('settings:revokeDevice', (_e, deviceId: unknown) => {
     const id = z.string().parse(deviceId);
     // Tell the signaling server to drop trust + unattended, then remove locally.

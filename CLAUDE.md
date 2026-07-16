@@ -1,6 +1,6 @@
 # CLAUDE.md — repository conventions & commands
 
-Monorepo for a Windows-first WebRTC remote desktop app. pnpm workspaces + strict
+Monorepo for AlphaConcept, a Windows-first WebRTC remote-control app. pnpm workspaces + strict
 TypeScript. Read `PROJECT_STATE.md` for current status.
 
 ## Workspace

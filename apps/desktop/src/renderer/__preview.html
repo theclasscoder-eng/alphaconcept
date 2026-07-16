@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>AlphaConcept preview</title>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark">✦</span> AlphaConcept</div>
+        <button class="nav-item active">▦ Dashboard</button>
+        <button class="nav-item">⚙ Settings</button>
+        <div class="rail-foot">
+          <div class="rail-status"><span class="dot on"></span> Connected</div>
+          <div class="theme-toggle">
+            <button id="lt">☀</button><button class="active" id="dk">☾</button>
+          </div>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 class="h1">This computer</h1>
+              <p class="sub" style="margin:0">Host or control a paired computer over an encrypted connection.</p>
+            </div>
+            <button class="primary">＋ Pair a device</button>
+          </div>
+
+          <div class="card accent">
+            <div class="row" style="align-items:flex-start">
+              <div>
+                <div class="eyebrow">This device</div>
+                <div style="font-size:19px;font-weight:650;letter-spacing:-.02em;margin-top:4px">Studio-PC</div>
+                <div class="mono muted" style="margin-top:3px">a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6</div>
+              </div>
+              <span class="chip"><span class="dot on"></span> Connected</span>
+            </div>
+            <div class="field-label" style="margin-top:16px">Fingerprint — share to verify this device</div>
+            <div class="fp">AB:CD:EF:12:34:56:78:9A:BC:DE:F0:12:34:56:78:9A</div>
+          </div>
+
+          <div class="card">
+            <div class="row">
+              <div>
+                <div class="card-title">Allow incoming connections</div>
+                <div class="muted" style="margin-top:4px">Let trusted devices request to control this computer (host mode).</div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked /><span style="min-width:22px">On</span></label>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="row" style="margin-bottom:14px">
+              <div class="card-title">Paired devices</div>
+              <span class="muted" style="font-size:12px">1 of 2 online</span>
+            </div>
+            <div class="stack" style="gap:10px">
+              <div class="device">
+                <div>
+                  <div class="device-name"><span class="dot on"></span> Laptop-Away</div>
+                  <div class="mono muted" style="margin-top:3px;font-size:11px">3f9a8b2c1d0e4f5a6b7c8d9e0f1a2b…</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px">
+                  <label class="toggle" style="font-size:12px;color:var(--text-2)"><input type="checkbox" /> Unattended</label>
+                  <button class="primary">Connect</button>
+                  <button class="danger">Revoke</button>
+                </div>
+              </div>
+              <div class="device">
+                <div>
+                  <div class="device-name"><span class="dot off"></span> Home-Server</div>
+                  <div class="mono muted" style="margin-top:3px;font-size:11px">88ff77ee66dd55cc44bb33aa2299…</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:14px">
+                  <label class="toggle" style="font-size:12px;color:var(--text-2)"><input type="checkbox" checked /> Unattended</label>
+                  <button class="primary" disabled>Offline</button>
+                  <button class="danger">Revoke</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabs">
+            <button class="tab active">General</button>
+            <button class="tab">Video</button>
+            <button class="tab">Connection</button>
+            <button class="tab">Security</button>
+            <button class="tab">Devices</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Servers</div>
+            <div class="grid2" style="margin-top:14px">
+              <label class="field"><span class="field-label">Quality</span>
+                <select><option>Balanced</option></select></label>
+              <label class="field"><span class="field-label">Frame rate limit</span>
+                <select><option>30 FPS</option></select></label>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      document.getElementById('lt').onclick = () => (document.documentElement.dataset.theme = 'light');
+      document.getElementById('dk').onclick = () => (document.documentElement.dataset.theme = 'dark');
+    </script>
+  </body>
+</html>

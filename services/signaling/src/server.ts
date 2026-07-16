@@ -6,7 +6,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
 import { randomUUID } from 'node:crypto';
-import { parseServerMessage, type ServerMessage } from '@rdp/protocol';
+import { parseServerMessage, encodeWire, decodeWire, type ServerMessage } from '@rdp/protocol';
 import type { Env } from './env.js';
 import { createLogger, type Logger } from './logger.js';
 import { createRepository, type Repository } from './repository/index.js';
@@ -74,7 +74,8 @@ export async function buildServer(env: Env): Promise<BuiltServer> {
         seenMessageIds: new Set<string>(),
         send(msg: ServerMessage) {
           if (socket.readyState === socket.OPEN) {
-            socket.send(JSON.stringify(msg));
+            // Obfuscate the message on the wire (see @rdp/protocol wire codec).
+            socket.send(JSON.stringify(encodeWire(msg as unknown as Record<string, unknown>)));
           }
         },
         close(code, reason) {
@@ -91,7 +92,7 @@ export async function buildServer(env: Env): Promise<BuiltServer> {
       socket.on('message', (data: Buffer) => {
         let raw: unknown;
         try {
-          raw = JSON.parse(data.toString('utf8'));
+          raw = decodeWire(JSON.parse(data.toString('utf8')));
         } catch {
           conn.send({
             v: 1,

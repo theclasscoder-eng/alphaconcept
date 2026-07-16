@@ -10,8 +10,12 @@ export const PROTOCOL_VERSION = 1 as const;
 /** Data-channel protocol version for the input-control channel. */
 export const INPUT_PROTOCOL_VERSION = 1 as const;
 
-/** Named data channel used exclusively for validated remote-control events. */
-export const CONTROL_CHANNEL_LABEL = 'rdp-control' as const;
+/**
+ * Named data channel for validated control events. Deliberately generic ("dc")
+ * so nothing about its purpose leaks. (The label lives inside the DTLS-encrypted
+ * channel, so this is defense-in-depth, not the primary protection.)
+ */
+export const CONTROL_CHANNEL_LABEL = 'dc' as const;
 
 /** Maximum age (ms) a signaling message timestamp may be from server "now". */
 export const MAX_MESSAGE_CLOCK_SKEW_MS = 60_000;

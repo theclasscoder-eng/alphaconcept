@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Patches an installed/copied Remote Desktop app in place - no reinstall.
+  Patches an installed/copied AlphaConcept app in place - no reinstall.
 
 .DESCRIPTION
   Because the app is packaged with asar disabled, its code lives as plain files
@@ -10,12 +10,12 @@
   It backs up the previous build to out.bak first, so you can roll back.
 
 .PARAMETER AppPath
-  Folder containing "Remote Desktop.exe". If omitted, the script looks next to
-  itself, then in the usual install locations.
+  Folder containing AlphaConcept.exe (or the older Remote Desktop.exe). If
+  omitted, the script looks next to itself, then in the usual install locations.
 
 .EXAMPLE
   .\apply-update.ps1
-  .\apply-update.ps1 -AppPath "C:\RemoteDesktop"
+  .\apply-update.ps1 -AppPath "C:\AlphaConcept"
 #>
 param([string]$AppPath)
 
@@ -28,7 +28,7 @@ function Write-Ok($msg)   { Write-Host "  $msg" -ForegroundColor Green }
 function Write-Warn($msg) { Write-Host "  $msg" -ForegroundColor Yellow }
 
 Write-Host ""
-Write-Host "=== Remote Desktop - in-place update ===" -ForegroundColor White
+Write-Host "=== AlphaConcept - in-place update ===" -ForegroundColor White
 Write-Host ""
 
 # The new build shipped alongside this script.
@@ -124,6 +124,6 @@ if ((Test-Path $newPkg) -and (Test-Path $pkg)) {
 
 Write-Host ""
 Write-Ok "Update complete."
-Write-Host "  Start the app again (Start Remote Desktop.cmd or $EXE)." -ForegroundColor Gray
+Write-Host "  Start the app again (Start AlphaConcept (Admin).cmd or $EXE)." -ForegroundColor Gray
 Write-Host "  To roll back: delete 'resources\app\out' and rename 'out.bak' back to 'out'." -ForegroundColor DarkGray
 Write-Host ""

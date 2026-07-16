@@ -7,14 +7,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   QUALITY_PRESETS,
+  INPUT_PROTOCOL_VERSION,
   type IceServer,
   type QualityLevel,
   type FrameRate,
+  type ControlMessage,
 } from '@rdp/protocol/browser';
 import type { MonitorInfo, OutgoingSignal } from '../../shared-app/types.js';
 import { QualityMonitor, type ConnectionQuality } from './stats.js';
 
 type Send = (msg: OutgoingSignal) => void;
+
+/** Distributive Omit so each control-message variant keeps its own keys. */
+type ControlInput<T = ControlMessage> = T extends unknown ? Omit<T, 'v' | 'seq' | 't'> : never;
 
 export interface HostCallbacks {
   onControl: (raw: unknown) => void;
@@ -53,6 +58,8 @@ export class HostSession {
   private readonly monitorStats = new QualityMonitor();
   private statsTimer: number | null = null;
   private closed = false;
+  private controlChannel: RTCDataChannel | null = null;
+  private seq = 0;
 
   /**
    * Resolves once screen capture has started AND the video track has been added
@@ -90,6 +97,7 @@ export class HostSession {
     };
     this.pc.ondatachannel = (e) => {
       const ch = e.channel;
+      this.controlChannel = ch;
       ch.onmessage = (ev) => {
         let raw: unknown;
         try {
@@ -180,6 +188,13 @@ export class HostSession {
 
   getMonitor(): MonitorInfo {
     return this.monitor;
+  }
+
+  /** Send a control message back to the controller (code handshake, etc.). */
+  sendControl(msg: ControlInput): void {
+    if (!this.controlChannel || this.controlChannel.readyState !== 'open') return;
+    const full = { v: INPUT_PROTOCOL_VERSION, seq: this.seq++, t: Date.now(), ...msg };
+    this.controlChannel.send(JSON.stringify(full));
   }
 
   stop(): void {
