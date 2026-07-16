@@ -33,4 +33,28 @@
     "typescript-eslint": "^8.20.0",
     "vitest": "^3.0.2"
   }
+  {
+  "scripts": {
+    "dist:win": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.alphaconcept.desktop",
+    "productName": "AlphaConcept",
+    "directories": {
+      "output": "release-new"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "artifactName": "AlphaConcept-Setup-${version}.${ext}"
+  }
+}
 }
