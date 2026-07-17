@@ -40,7 +40,12 @@ export class ControllerSession {
     private readonly cb: ControllerCallbacks,
   ) {
     this.pc = new RTCPeerConnection({ iceServers: iceServers as RTCIceServer[] });
-    this.channel = this.pc.createDataChannel(CONTROL_CHANNEL_LABEL, { ordered: true });
+    // Input is latency-critical: mark the control channel high priority so it is
+    // scheduled ahead of bulk traffic on the same connection.
+    this.channel = this.pc.createDataChannel(CONTROL_CHANNEL_LABEL, {
+      ordered: true,
+      priority: 'high',
+    } as RTCDataChannelInit);
     this.channel.onopen = () => {
       this.sendControl({ type: 'control.hello', role: 'controller', protocolVersion: INPUT_PROTOCOL_VERSION });
       this.cb.onChannelOpen();

@@ -21,6 +21,8 @@ copy /y "scripts\apply-update.ps1"  "%UPD%\apply-update.ps1" >nul
 copy /y "scripts\apply-update.cmd"  "%UPD%\apply-update.cmd" >nul
 copy /y "scripts\UPDATE-README.txt" "%UPD%\README.txt" >nul 2>nul
 copy /y "scripts\Start AlphaConcept (Admin).cmd" "%UPD%\Start AlphaConcept (Admin).cmd" >nul 2>nul
+copy /y "scripts\Set-AlphaConceptQoS.ps1" "%UPD%\Set-AlphaConceptQoS.ps1" >nul 2>nul
+copy /y "scripts\Enable Real-Time Priority (Admin).cmd" "%UPD%\Enable Real-Time Priority (Admin).cmd" >nul 2>nul
 
 echo === Zipping ===
 powershell -NoProfile -Command "Compress-Archive -Path 'apps\desktop\release\update\*' -DestinationPath 'apps\desktop\release\update.zip' -Force"

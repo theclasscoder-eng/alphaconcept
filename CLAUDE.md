@@ -3,6 +3,9 @@
 Monorepo for AlphaConcept, a Windows-first WebRTC remote-control app. pnpm workspaces + strict
 TypeScript. Read `PROJECT_STATE.md` for current status.
 
+**MANDATORY: read `HANDOFF.md` at the start of every session, and update it (sections + dated
+Session Log entry) every time anything is done — code, config, docs, decisions, or verifications.**
+
 ## Workspace
 
 - Packages: `@rdp/protocol`, `@rdp/shared`, `@rdp/config`, `@rdp/signaling`,

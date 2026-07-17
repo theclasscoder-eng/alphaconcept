@@ -25,7 +25,26 @@ ROLLBACK
 Delete  <app>\resources\app\out
 Rename  <app>\resources\app\out.bak  ->  out
 
-WHAT'S IN THIS UPDATE (0.1.9)
+WHAT'S IN THIS UPDATE (0.1.10)
+-----------------------------
+- REAL-TIME NETWORK PRIORITY. The app now asks the network to treat its own
+  screen + input traffic as high priority so it stays as close to real time as
+  possible when the connection is busy:
+    * Video packets are tagged high network priority (DSCP EF / value 46).
+    * When bandwidth drops, the host now sheds resolution instead of frame rate
+      (degradationPreference = "maintain-framerate") and hints the encoder that
+      the content is motion - both keep movement smooth and latency low.
+    * The keyboard/mouse control channel is marked high priority so input is
+      scheduled ahead of bulk data.
+  * JS-only change - the in-place update applies it fully; no reinstall needed.
+  * TO ACTUALLY ENFORCE IT on Windows, run the included
+    "Enable Real-Time Priority (Admin).cmd" ONCE on BOTH PCs (one UAC prompt).
+    It creates a Policy-based QoS rule so Windows keeps the DSCP tags. For it to
+    help across the internet, your ROUTER should also prioritise DSCP 46 traffic
+    (or the host PC's IP) - see docs. Undo any time with the same script:
+    Set-AlphaConceptQoS.ps1 -Remove.
+
+EARLIER (0.1.9)
 -----------------------------
 - REDESIGN: a completely new look and feel ("warm studio"). Cream-paper light
   mode and a warm cocoa-charcoal dark mode replace the old cool-navy scheme,

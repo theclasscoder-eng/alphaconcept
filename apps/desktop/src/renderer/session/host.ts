@@ -124,6 +124,9 @@ export class HostSession {
       throw err;
     }
     for (const track of this.stream.getTracks()) {
+      // Hint the encoder that this is screen *motion* (remote control), trading
+      // static sharpness for lower latency on movement.
+      if (track.kind === 'video') track.contentHint = 'motion';
       this.pc.addTrack(track, this.stream);
     }
     this.applyEncoding();
@@ -165,6 +168,12 @@ export class HostSession {
     if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
     params.encodings[0]!.maxBitrate = QUALITY_PRESETS[this.quality].maxBitrate;
     (params.encodings[0] as any).maxFramerate = this.frameRate;
+    // Real-time prioritisation: tag media as high network priority (DSCP EF/AF
+    // when the OS/router honour it) and, when bandwidth is scarce, sacrifice
+    // resolution rather than frame rate / latency so control stays responsive.
+    (params.encodings[0] as any).networkPriority = 'high';
+    (params.encodings[0] as any).priority = 'high';
+    (params as any).degradationPreference = 'maintain-framerate';
     void sender.setParameters(params).catch(() => undefined);
   }
 
